@@ -42,36 +42,78 @@ const deleteRecordingButton   = document.getElementById("deleteRecordingButton")
 const platformOptions    = document.getElementById("platformOptions");
 const platformFormatNote = document.getElementById("platformFormatNote");
 
-/* NOTE: The broadcast banner and banned modal elements exist in the
-   merged HTML, but the signaling handlers for them are intentionally
-   NOT wired up here, because that was the exact source of the
-   "Stranger left" regression. If/when your server's protocol for
-   those messages is confirmed, they can be added back safely. */
 
 /* ============================================================
    WEBRTC CONFIGURATION
+   ------------------------------------------------------------
+   HARDCODED TURN IS REQUIRED. STUN alone will fail for the vast
+   majority of real-world connections (mobile networks, CGNAT,
+   corporate Wi-Fi, symmetric NAT).
+
+   The /api/ice-config endpoint is an OPTIONAL override. If it
+   fails or returns nothing usable, we KEEP the hardcoded TURN
+   config. We never fall back to STUN-only.
    ============================================================ */
 
 let rtcConfiguration = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  iceTransportPolicy: "all"
+  iceServers: [
+    { urls: "stun:free.expressturn.com:3478" },
+    {
+      urls: [
+        "turn:free.expressturn.com:3478?transport=udp",
+        "turn:free.expressturn.com:3478?transport=tcp"
+      ],
+      username: "000000002103732653",
+      credential: "rgTyOIK/8pVvQzdnm7e5jave1MA="
+    }
+  ],
+  iceTransportPolicy: "all",
+  // Give ICE more time to find a path (helps on slow mobile nets).
+  iceCandidatePoolSize: 10,
+  bundlePolicy: "max-bundle",
+  rtcpMuxPolicy: "require"
 };
 
 async function loadIceConfig() {
   try {
-    const res = await fetch("/api/ice-config", { cache: "no-store" });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch("/api/ice-config", {
+      cache: "no-store",
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
+
     if (Array.isArray(data.iceServers) && data.iceServers.length) {
-      rtcConfiguration = {
-        iceServers: data.iceServers,
-        iceTransportPolicy: "all"
-      };
-      debug("ICE config loaded");
+      // Make sure the server response actually contains a TURN entry;
+      // if it's STUN-only, ignore it and keep our hardcoded TURN.
+      const hasTurn = data.iceServers.some((server) => {
+        const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+        return urls.some((u) => typeof u === "string" && u.startsWith("turn"));
+      });
+
+      if (hasTurn) {
+        rtcConfiguration = {
+          iceServers: data.iceServers,
+          iceTransportPolicy: "all",
+          iceCandidatePoolSize: 10,
+          bundlePolicy: "max-bundle",
+          rtcpMuxPolicy: "require"
+        };
+        debug("ICE config overridden from server (TURN present)");
+      } else {
+        debug("Server ICE config had no TURN — keeping hardcoded TURN");
+      }
     }
   } catch (error) {
-    console.warn("[HEY] ICE config fallback (STUN-only):", error);
+    // AbortError, network error, bad JSON, etc. — keep hardcoded TURN.
+    debug("Using hardcoded ICE config (TURN). Reason:", error && error.message);
   }
 }
 
@@ -162,15 +204,12 @@ function updatePlatformSelection() {
       btn.classList.toggle("selected", btn.dataset.platform === selectedExportPlatform);
     });
   }
-
   if (platformFormatNote) {
     platformFormatNote.textContent = config.note;
   }
-
   updateDownloadButtonText();
 }
 
-/* Sync whenever the HTML selector publishes a change. */
 window.addEventListener("lela:platform-change", (event) => {
   const detail = event && event.detail;
   if (!detail || !detail.platform || !EXPORT_PLATFORMS[detail.platform]) return;
@@ -183,7 +222,6 @@ window.addEventListener("lela:platform-change", (event) => {
   updateDownloadButtonText();
 });
 
-/* Initial sync. */
 (function initialPlatformSync() {
   if (window.LELA && window.LELA.platform && EXPORT_PLATFORMS[window.LELA.platform]) {
     selectedExportPlatform = window.LELA.platform;
@@ -233,7 +271,7 @@ function applyChatState() {
 
 
 /* ============================================================
-   LOCAL-ONLY VIDEO RECORDING (unchanged from working version)
+   LOCAL-ONLY VIDEO RECORDING
    ============================================================ */
 
 function setRecordingIndicators(show) {
@@ -531,7 +569,6 @@ function openRecordingResult(blob, durationSeconds) {
   recordingLocalNote.innerHTML =
     "🔒 <strong>Not uploaded.</strong> The recording is only in this browser right now. Pick a target format below — the export is prepared on this device.";
 
-  // Reset to the default platform each time the modal opens.
   selectedExportPlatform = "tiktok";
 
   if (window.LELA && typeof window.LELA.setExportPlatform === "function") {
@@ -854,7 +891,7 @@ function finishLocalRecording() {
 
 
 /* ============================================================
-   WEBSOCKET SIGNALING  ← kept identical to the working version
+   WEBSOCKET SIGNALING
    ============================================================ */
 
 function connectToSignalingServer() {
@@ -929,7 +966,9 @@ async function startCamera() {
     updateStopButton();
     updateVideoPlaceholders();
 
+    // Optional server override; hardcoded TURN is the guaranteed default.
     await loadIceConfig();
+
     connectToSignalingServer();
 
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -976,6 +1015,14 @@ function createPeerConnection() {
     if (event.streams && event.streams[0]) {
       remoteVideo.srcObject = event.streams[0];
       updateVideoPlaceholders();
+
+      // Some browsers need an explicit play() after srcObject is set.
+      const playPromise = remoteVideo.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(() => {
+          // Autoplay blocked — user gesture will resume on next click.
+        });
+      }
     }
   });
 
@@ -988,9 +1035,20 @@ function createPeerConnection() {
   peerConnection.addEventListener("iceconnectionstatechange", () => {
     if (!peerConnection) return;
     const state = peerConnection.iceConnectionState;
-    if (state === "checking")                            setStatus("Connecting to stranger...");
-    if (state === "connected" || state === "completed")  setStatus("Connected!");
-    if (state === "failed")                              setStatus("Video connection failed.");
+    if (state === "checking")                           setStatus("Connecting to stranger...");
+    if (state === "connected" || state === "completed") setStatus("Connected!");
+    if (state === "failed")                             setStatus("Video connection failed.");
+    if (state === "disconnected")                       setStatus("Connection unstable...");
+  });
+
+  peerConnection.addEventListener("connectionstatechange", () => {
+    if (!peerConnection) return;
+    // If the underlying peer connection fully fails, treat it like a
+    // disconnect so the UI stays honest. "disconnected" alone is often
+    // transient, so we don't act on that.
+    if (peerConnection.connectionState === "failed") {
+      setStatus("Video connection failed.");
+    }
   });
 
   peerConnection.addEventListener("datachannel", (event) => {
@@ -1099,7 +1157,21 @@ async function handleSignalingMessage(message) {
       break;
 
     case "peer-disconnected":
+      // Guard: if we're already not matched, this is a duplicate
+      // signal (common when both peers report the same disconnect).
+      // Ignoring it prevents the UI from flickering and prevents
+      // tearing down a peer that is actually still alive.
+      if (!isMatched) {
+        debug("Ignoring duplicate peer-disconnected.");
+        break;
+      }
       handlePeerDisconnected();
+      break;
+
+    default:
+      // Unknown message type — ignore silently so we never accidentally
+      // tear down a healthy connection.
+      debug("Unknown signaling message:", message.type);
       break;
   }
 }
@@ -1338,10 +1410,6 @@ if (reportModalBackdrop) {
   });
 }
 
-/* Fallback click handler for the platform group.
-   The HTML inline script already handles the visual state and
-   fires "lela:platform-change"; this just keeps app.js's own
-   state in sync in case the inline script is ever removed. */
 if (platformOptions) {
   platformOptions.addEventListener("click", (event) => {
     const button = event.target.closest
