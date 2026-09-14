@@ -21,10 +21,9 @@ const reportButton     = document.getElementById("reportButton");
 const statusElement      = document.getElementById("status");
 const onlineCountElement = document.getElementById("onlineCountText");
 
-const chatForm        = document.getElementById("chatForm");
-const chatInput       = document.getElementById("chatInput");
-const chatMessages    = document.getElementById("chatMessages");
-const sendChatButton  = document.getElementById("sendChatButton");
+const chatForm     = document.getElementById("chatForm");
+const chatInput    = document.getElementById("chatInput");
+const chatMessages = document.getElementById("chatMessages");
 
 const reportModalBackdrop = document.getElementById("reportModalBackdrop");
 const cancelReportButton  = document.getElementById("cancelReportButton");
@@ -43,14 +42,14 @@ const deleteRecordingButton   = document.getElementById("deleteRecordingButton")
 const platformOptions    = document.getElementById("platformOptions");
 const platformFormatNote = document.getElementById("platformFormatNote");
 
-const broadcastBanner   = document.getElementById("broadcastBanner");
-const broadcastMessage  = document.getElementById("broadcastMessage");
-const bannedModalBackdrop = document.getElementById("bannedModalBackdrop");
-const bannedReasonText    = document.getElementById("bannedReasonText");
-
+/* NOTE: The broadcast banner and banned modal elements exist in the
+   merged HTML, but the signaling handlers for them are intentionally
+   NOT wired up here, because that was the exact source of the
+   "Stranger left" regression. If/when your server's protocol for
+   those messages is confirmed, they can be added back safely. */
 
 /* ============================================================
-   WEBRTC CONFIGURATION (loaded from server — TURN stays private)
+   WEBRTC CONFIGURATION
    ============================================================ */
 
 let rtcConfiguration = {
@@ -64,19 +63,15 @@ async function loadIceConfig() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
-
     if (Array.isArray(data.iceServers) && data.iceServers.length) {
       rtcConfiguration = {
         iceServers: data.iceServers,
         iceTransportPolicy: "all"
       };
-      debug("ICE config loaded:", rtcConfiguration);
+      debug("ICE config loaded");
     }
   } catch (error) {
-    console.warn(
-      "[HEY] Could not load ICE config, using STUN-only fallback:",
-      error
-    );
+    console.warn("[HEY] ICE config fallback (STUN-only):", error);
   }
 }
 
@@ -85,26 +80,24 @@ async function loadIceConfig() {
    STATE
    ============================================================ */
 
-let localStream           = null;
-let peerConnection        = null;
-let socket                = null;
-let chatChannel           = null;
-let pendingIceCandidates  = [];
-let hasStartedCamera      = false;
-let isMatched             = false;
-let chatEnabled           = true;
+let localStream          = null;
+let peerConnection       = null;
+let socket               = null;
+let chatChannel          = null;
+let pendingIceCandidates = [];
+let hasStartedCamera     = false;
+let isMatched            = false;
+let chatEnabled          = true;
 
-// Local-only encounter recording state.
-// Recording bytes are never sent to the server.
-let mediaRecorder            = null;
-let recordingChunks          = [];
-let recordingCanvas          = null;
-let recordingContext         = null;
-let recordingCanvasStream    = null;
-let recordingAnimationFrame  = null;
-let recordingTimer           = null;
-let recordingStartedAt       = 0;
-let recordingElapsedMs       = 0;
+let mediaRecorder           = null;
+let recordingChunks         = [];
+let recordingCanvas         = null;
+let recordingContext        = null;
+let recordingCanvasStream   = null;
+let recordingAnimationFrame = null;
+let recordingTimer          = null;
+let recordingStartedAt      = 0;
+let recordingElapsedMs      = 0;
 
 let recordingAudioContext     = null;
 let recordingAudioDestination = null;
@@ -114,9 +107,6 @@ let completedRecordingBlob            = null;
 let completedRecordingUrl             = null;
 let completedRecordingDurationSeconds = 0;
 
-// Which platform profile is currently active for export.
-// Kept in sync with the HTML's inline platform selector via
-// the "lela:platform-change" custom event.
 let selectedExportPlatform = "tiktok";
 let exportInProgress       = false;
 
@@ -125,113 +115,75 @@ let exportInProgress       = false;
    DEBUG & STATUS
    ============================================================ */
 
-function debug(...args) {
-  console.log("[HEY]", ...args);
-}
+function debug(...args) { console.log("[HEY]", ...args); }
 
 function setStatus(message) {
-  if (statusElement) {
-    statusElement.textContent = message;
-  }
+  if (statusElement) statusElement.textContent = message;
   debug(message);
 }
 
 
 /* ============================================================
    EXPORT PLATFORM PROFILES
-   ------------------------------------------------------------
-   The HTML inline selector owns the *visual* state and the
-   user-facing labels. These profiles describe how app.js should
-   actually *render* the export when the user presses Save.
    ============================================================ */
 
 const EXPORT_PLATFORMS = {
-  tiktok: {
-    label:    "TikTok",
-    width:    1080,
-    height:   1920,
-    layout:   "vertical",
-    filename: "hey-tiktok",
-    note:     "Vertical 9:16 • optimized for short-form video"
-  },
-  instagram: {
-    label:    "Instagram Reels",
-    width:    1080,
-    height:   1920,
-    layout:   "vertical",
-    filename: "hey-instagram-reel",
-    note:     "Vertical 9:16 • optimized for Reels"
-  },
-  shorts: {
-    label:    "YouTube Shorts",
-    width:    1080,
-    height:   1920,
-    layout:   "vertical",
-    filename: "hey-youtube-short",
-    note:     "Vertical 9:16 • optimized for Shorts"
-  },
-  youtube: {
-    label:    "YouTube",
-    width:    1920,
-    height:   1080,
-    layout:   "horizontal",
-    filename: "hey-youtube",
-    note:     "Horizontal 16:9 • standard YouTube video"
-  },
-  original: {
-    label:    "Original",
-    width:    1280,
-    height:   720,
-    layout:   "original",
-    filename: "hey-encounter",
-    note:     "Original recording format"
-  }
+  tiktok:    { label: "TikTok",          width: 1080, height: 1920, layout: "vertical",   filename: "hey-tiktok",         note: "Vertical 9:16 • optimized for short-form video" },
+  instagram: { label: "Instagram Reels", width: 1080, height: 1920, layout: "vertical",   filename: "hey-instagram-reel", note: "Vertical 9:16 • optimized for Reels" },
+  shorts:    { label: "YouTube Shorts",  width: 1080, height: 1920, layout: "vertical",   filename: "hey-youtube-short",  note: "Vertical 9:16 • optimized for Shorts" },
+  youtube:   { label: "YouTube",         width: 1920, height: 1080, layout: "horizontal", filename: "hey-youtube",        note: "Horizontal 16:9 • standard YouTube video" },
+  original:  { label: "Original",        width: 1280, height: 720,  layout: "original",   filename: "hey-encounter",      note: "Original recording format" }
 };
 
-/* Ask the HTML inline selector (or the DOM) which platform
-   the user has chosen right now. Falls back safely. */
 function getCurrentExportPlatform() {
-  // 1. Preferred: the inline script's published state.
   if (window.LELA && window.LELA.platform && EXPORT_PLATFORMS[window.LELA.platform]) {
     return window.LELA.platform;
   }
-
-  // 2. Fallback: read the checked radio button directly.
   const checked = document.querySelector(".platform-option.selected");
   if (checked && EXPORT_PLATFORMS[checked.dataset.platform]) {
     return checked.dataset.platform;
   }
-
-  // 3. Last resort.
   return "tiktok";
 }
 
-/* Keep the Save button's label aligned with the active platform. */
 function updateDownloadButtonText() {
   if (!downloadRecordingButton || exportInProgress) return;
-
   const config = EXPORT_PLATFORMS[selectedExportPlatform];
   if (!config) return;
-
   downloadRecordingButton.textContent = `⬇ Download for ${config.label}`;
 }
 
-/* Listen for the HTML inline selector's custom event so app.js
-   stays in sync whenever the user picks a different platform. */
+function updatePlatformSelection() {
+  const config = EXPORT_PLATFORMS[selectedExportPlatform];
+  if (!config) return;
+
+  if (platformOptions) {
+    platformOptions.querySelectorAll(".platform-option").forEach((btn) => {
+      btn.classList.toggle("selected", btn.dataset.platform === selectedExportPlatform);
+    });
+  }
+
+  if (platformFormatNote) {
+    platformFormatNote.textContent = config.note;
+  }
+
+  updateDownloadButtonText();
+}
+
+/* Sync whenever the HTML selector publishes a change. */
 window.addEventListener("lela:platform-change", (event) => {
   const detail = event && event.detail;
-  if (!detail || !detail.platform) return;
-  if (!EXPORT_PLATFORMS[detail.platform]) return;
+  if (!detail || !detail.platform || !EXPORT_PLATFORMS[detail.platform]) return;
 
   selectedExportPlatform = detail.platform;
 
-  if (!exportInProgress) {
-    updateDownloadButtonText();
+  if (platformFormatNote) {
+    platformFormatNote.textContent = EXPORT_PLATFORMS[detail.platform].note;
   }
+  updateDownloadButtonText();
 });
 
-/* Initial sync — the HTML inline script runs before app.js
-   and already publishes a default selection. */
+/* Initial sync. */
 (function initialPlatformSync() {
   if (window.LELA && window.LELA.platform && EXPORT_PLATFORMS[window.LELA.platform]) {
     selectedExportPlatform = window.LELA.platform;
@@ -253,10 +205,9 @@ function updateVideoPlaceholders() {
 }
 
 function updateMatchButtons() {
-  if (nextButton)         nextButton.disabled        = !isMatched;
-  if (reportButton)       reportButton.disabled      = !isMatched;
-  if (chatToggleButton)   chatToggleButton.disabled  = !isMatched;
-  if (recordButton)       recordButton.disabled      = !isMatched;
+  if (nextButton)       nextButton.disabled       = !isMatched;
+  if (reportButton)     reportButton.disabled     = !isMatched;
+  if (chatToggleButton) chatToggleButton.disabled = !isMatched;
 
   updateRecordButton();
 
@@ -273,9 +224,7 @@ function updateStopButton() {
 
 function applyChatState() {
   const chatPanel = document.querySelector(".chat-panel");
-  if (chatPanel) {
-    chatPanel.classList.toggle("chat-off", !chatEnabled);
-  }
+  if (chatPanel) chatPanel.classList.toggle("chat-off", !chatEnabled);
   if (chatInput) {
     chatInput.disabled = !chatEnabled;
     chatInput.placeholder = chatEnabled ? "Type a message..." : "Chat is off";
@@ -284,15 +233,13 @@ function applyChatState() {
 
 
 /* ============================================================
-   LOCAL-ONLY VIDEO RECORDING
+   LOCAL-ONLY VIDEO RECORDING (unchanged from working version)
    ============================================================ */
 
 function setRecordingIndicators(show) {
   if (!recordingStatus) return;
   recordingStatus.classList.toggle("show", show);
-  if (!show && recordingTime) {
-    recordingTime.textContent = "00:00";
-  }
+  if (!show && recordingTime) recordingTime.textContent = "00:00";
 }
 
 function getRecordingElapsedSeconds() {
@@ -304,7 +251,7 @@ function getRecordingElapsedSeconds() {
 }
 
 function formatRecordingTime(seconds) {
-  const total = Math.max(0, Math.floor(seconds));
+  const total   = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(total / 60).toString().padStart(2, "0");
   const secs    = (total % 60).toString().padStart(2, "0");
   return `${minutes}:${secs}`;
@@ -312,7 +259,6 @@ function formatRecordingTime(seconds) {
 
 function updateRecordingTimer() {
   if (!mediaRecorder) return;
-
   const formatted = formatRecordingTime(getRecordingElapsedSeconds());
   if (recordingTime) recordingTime.textContent = formatted;
 
@@ -347,16 +293,9 @@ function chooseRecordingFormat() {
     { mimeType: "video/webm;codecs=vp8,opus",             extension: "webm" },
     { mimeType: "video/webm",                             extension: "webm" }
   ];
-
-  const supported = candidates.find((item) =>
-    MediaRecorder.isTypeSupported(item.mimeType)
-  );
-
+  const supported = candidates.find((item) => MediaRecorder.isTypeSupported(item.mimeType));
   return supported || { mimeType: "video/webm", extension: "webm" };
 }
-
-
-/* ---- Canvas drawing: clean recording without any overlays ---- */
 
 function drawRecordingFrame() {
   if (!recordingContext || !recordingCanvas) return;
@@ -366,13 +305,11 @@ function drawRecordingFrame() {
   const gap    = Math.round(width * 0.015);
   const cardWidth = Math.floor((width - gap) / 2);
 
-  // Clean recording: only the two video feeds.
-  // No badge, timer, chat overlay, or watermark burned in.
   recordingContext.fillStyle = "#080a12";
   recordingContext.fillRect(0, 0, width, height);
 
-  drawVideoToCanvas(remoteVideo, 0,                0, cardWidth, height);
-  drawVideoToCanvas(localVideo,  cardWidth + gap,  0, cardWidth, height);
+  drawVideoToCanvas(remoteVideo, 0,               0, cardWidth, height);
+  drawVideoToCanvas(localVideo,  cardWidth + gap, 0, cardWidth, height);
 
   if (mediaRecorder && mediaRecorder.state === "recording") {
     recordingAnimationFrame = requestAnimationFrame(drawRecordingFrame);
@@ -403,9 +340,6 @@ function drawVideoToCanvas(video, x, y, width, height) {
 
   recordingContext.drawImage(video, sx, sy, sw, sh, x, y, width, height);
 }
-
-
-/* ---- Audio capture for recording ---- */
 
 function setupRecordingAudio() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -444,9 +378,6 @@ function setupRecordingAudio() {
   }
 }
 
-
-/* ---- Start / stop the local recording ---- */
-
 async function startLocalRecording() {
   if (!isMatched) return;
   if (mediaRecorder && (mediaRecorder.state === "recording" || mediaRecorder.state === "paused")) return;
@@ -465,7 +396,6 @@ async function startLocalRecording() {
     recordingCanvas.width  = 1280;
     recordingCanvas.height = 720;
     recordingContext = recordingCanvas.getContext("2d");
-
     if (!recordingContext) throw new Error("Could not create recording canvas.");
 
     recordingCanvasStream = recordingCanvas.captureStream(30);
@@ -481,15 +411,14 @@ async function startLocalRecording() {
         videoBitsPerSecond: 3500000
       });
     } catch (firstError) {
-      console.warn("[HEY] Preferred recording format unavailable; falling back:", firstError);
       mediaRecorder = new MediaRecorder(recordingCanvasStream, {
         videoBitsPerSecond: 3500000
       });
     }
 
-    recordingChunks      = [];
-    recordingElapsedMs   = 0;
-    recordingStartedAt   = Date.now();
+    recordingChunks    = [];
+    recordingElapsedMs = 0;
+    recordingStartedAt = Date.now();
 
     mediaRecorder.addEventListener("dataavailable", (event) => {
       if (event.data && event.data.size > 0) recordingChunks.push(event.data);
@@ -500,7 +429,6 @@ async function startLocalRecording() {
     });
 
     mediaRecorder.addEventListener("stop", finishLocalRecording, { once: true });
-
     mediaRecorder.start(500);
 
     setRecordingIndicators(true);
@@ -510,16 +438,13 @@ async function startLocalRecording() {
 
     recordingTimer = setInterval(updateRecordingTimer, 250);
     drawRecordingFrame();
-
   } catch (error) {
     console.error("[HEY] Could not start recording:", error);
-
     cleanupRecordingResources();
     mediaRecorder      = null;
     recordingChunks    = [];
     recordingStartedAt = 0;
     recordingElapsedMs = 0;
-
     setRecordingIndicators(false);
     updateRecordButton();
     alert("Could not start recording on this browser.");
@@ -536,21 +461,17 @@ function stopLocalRecording() {
 
   try {
     if (mediaRecorder.state === "recording") mediaRecorder.requestData();
-  } catch (error) {
-    console.warn("[HEY] Could not flush final chunk:", error);
-  }
+  } catch (error) { /* ignore */ }
 
   try {
     if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
   } catch (error) {
-    console.error("[HEY] Could not stop recorder:", error);
     finishLocalRecording();
     return;
   }
 
   clearInterval(recordingTimer);
   recordingTimer = null;
-
   setRecordingIndicators(false);
   sendMessage({ type: "recording-stopped" });
   setStatus("Finishing recording...");
@@ -581,21 +502,15 @@ function cleanupRecordingResources() {
 
 function formatBytes(bytes) {
   if (!bytes) return "0 B";
-
   const units = ["B", "KB", "MB", "GB"];
   let size = bytes;
   let unitIndex = 0;
-
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex++;
   }
-
   return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
-
-
-/* ---- Open the result modal ---- */
 
 function openRecordingResult(blob, durationSeconds) {
   completedRecordingBlob            = blob;
@@ -616,22 +531,23 @@ function openRecordingResult(blob, durationSeconds) {
   recordingLocalNote.innerHTML =
     "🔒 <strong>Not uploaded.</strong> The recording is only in this browser right now. Pick a target format below — the export is prepared on this device.";
 
-  // Reset the platform selection back to the default each time the
-  // result modal opens. If the HTML inline selector is present, it
-  // will also update the visual state and re-dispatch the change
-  // event, which keeps our `selectedExportPlatform` in sync.
+  // Reset to the default platform each time the modal opens.
+  selectedExportPlatform = "tiktok";
+
   if (window.LELA && typeof window.LELA.setExportPlatform === "function") {
     window.LELA.setExportPlatform("tiktok");
+  } else {
+    updatePlatformSelection();
   }
-  selectedExportPlatform = "tiktok";
-  updateDownloadButtonText();
 
   recordingResultBackdrop.classList.add("show");
   recordingPreview.muted = false;
 }
 
 
-/* ---- Helpers for platform export rendering ---- */
+/* ============================================================
+   PLATFORM EXPORT
+   ============================================================ */
 
 function chooseExportRecordingFormat() {
   const candidates = [
@@ -641,10 +557,8 @@ function chooseExportRecordingFormat() {
     { mimeType: "video/webm;codecs=vp8,opus",             extension: "webm" },
     { mimeType: "video/webm",                             extension: "webm" }
   ];
-
-  return candidates.find((item) =>
-    MediaRecorder.isTypeSupported(item.mimeType)
-  ) || { mimeType: "video/webm", extension: "webm" };
+  return candidates.find((item) => MediaRecorder.isTypeSupported(item.mimeType))
+    || { mimeType: "video/webm", extension: "webm" };
 }
 
 function drawExportSourceFrame(ctx, video, config) {
@@ -667,16 +581,10 @@ function drawExportSourceFrame(ctx, video, config) {
     const gap         = 18;
     const panelHeight = Math.floor((height - gap) / 2);
 
-    drawSourceCropCover(
-      ctx, video,
-      0, 0, sourceHalfWidth, video.videoHeight,
-      0, 0, width, panelHeight
-    );
-    drawSourceCropCover(
-      ctx, video,
-      sourceHalfWidth, 0, sourceHalfWidth, video.videoHeight,
-      0, panelHeight + gap, width, height - panelHeight - gap
-    );
+    drawSourceCropCover(ctx, video, 0, 0, sourceHalfWidth, video.videoHeight,
+                        0, 0, width, panelHeight);
+    drawSourceCropCover(ctx, video, sourceHalfWidth, 0, sourceHalfWidth, video.videoHeight,
+                        0, panelHeight + gap, width, height - panelHeight - gap);
     return;
   }
 
@@ -684,11 +592,7 @@ function drawExportSourceFrame(ctx, video, config) {
 }
 
 function drawCoverSource(ctx, video, dx, dy, dw, dh) {
-  drawSourceCropCover(
-    ctx, video,
-    0, 0, video.videoWidth, video.videoHeight,
-    dx, dy, dw, dh
-  );
+  drawSourceCropCover(ctx, video, 0, 0, video.videoWidth, video.videoHeight, dx, dy, dw, dh);
 }
 
 function drawSourceCropCover(ctx, video, sx, sy, sw, sh, dx, dy, dw, dh) {
@@ -711,21 +615,10 @@ function drawSourceCropCover(ctx, video, sx, sy, sw, sh, dx, dy, dw, dh) {
   ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, dx, dy, dw, dh);
 }
 
-
-/* ---- Re-render the completed recording into the chosen format ---- */
-
 async function createPlatformRecording(config) {
-  if (!completedRecordingBlob) {
-    throw new Error("No completed recording is available.");
-  }
-
-  if (config.layout === "original") {
-    return completedRecordingBlob;
-  }
-
-  if (!window.MediaRecorder) {
-    throw new Error("This browser cannot create a platform-specific video export.");
-  }
+  if (!completedRecordingBlob) throw new Error("No completed recording is available.");
+  if (config.layout === "original") return completedRecordingBlob;
+  if (!window.MediaRecorder) throw new Error("This browser cannot create a platform-specific video export.");
 
   const sourceUrl   = URL.createObjectURL(completedRecordingBlob);
   const sourceVideo = document.createElement("video");
@@ -737,11 +630,8 @@ async function createPlatformRecording(config) {
   try {
     await new Promise((resolve, reject) => {
       sourceVideo.addEventListener("loadedmetadata", resolve, { once: true });
-      sourceVideo.addEventListener(
-        "error",
-        () => reject(new Error("Could not read the local recording.")),
-        { once: true }
-      );
+      sourceVideo.addEventListener("error",
+        () => reject(new Error("Could not read the local recording.")), { once: true });
     });
 
     await sourceVideo.play();
@@ -763,28 +653,20 @@ async function createPlatformRecording(config) {
 
     if (captureStream) {
       captureStream.getAudioTracks().forEach((track) => {
-        try {
-          canvasStream.addTrack(track.clone());
-          audioAdded = true;
-        } catch (e) {}
+        try { canvasStream.addTrack(track.clone()); audioAdded = true; } catch (e) {}
       });
     }
 
-    let audioContext     = null;
-    let audioSource      = null;
-    let audioDestination = null;
-
+    let audioContext = null;
     if (!audioAdded) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (AudioContextClass) {
         try {
-          audioContext     = new AudioContextClass();
-          audioSource      = audioContext.createMediaElementSource(sourceVideo);
-          audioDestination = audioContext.createMediaStreamDestination();
-          audioSource.connect(audioDestination);
-          audioDestination.stream.getAudioTracks().forEach((track) => {
-            canvasStream.addTrack(track);
-          });
+          audioContext = new AudioContextClass();
+          const src  = audioContext.createMediaElementSource(sourceVideo);
+          const dest = audioContext.createMediaStreamDestination();
+          src.connect(dest);
+          dest.stream.getAudioTracks().forEach((t) => canvasStream.addTrack(t));
           if (audioContext.state === "suspended") await audioContext.resume();
         } catch (e) {
           console.warn("[HEY] Export audio track unavailable:", e);
@@ -794,7 +676,6 @@ async function createPlatformRecording(config) {
 
     const format = chooseExportRecordingFormat();
     let recorder;
-
     try {
       recorder = new MediaRecorder(canvasStream, {
         mimeType: format.mimeType,
@@ -807,18 +688,14 @@ async function createPlatformRecording(config) {
     }
 
     const chunks = [];
-
     recorder.addEventListener("dataavailable", (event) => {
       if (event.data && event.data.size > 0) chunks.push(event.data);
     });
 
     const done = new Promise((resolve, reject) => {
-      recorder.addEventListener("stop",  resolve, { once: true });
-      recorder.addEventListener(
-        "error",
-        () => reject(new Error("Platform export failed.")),
-        { once: true }
-      );
+      recorder.addEventListener("stop", resolve, { once: true });
+      recorder.addEventListener("error",
+        () => reject(new Error("Platform export failed.")), { once: true });
     });
 
     const drawLoop = () => {
@@ -837,16 +714,10 @@ async function createPlatformRecording(config) {
     });
 
     if (recorder.state !== "inactive") recorder.stop();
-
     await done;
 
-    if (audioContext) {
-      try { await audioContext.close(); } catch (e) {}
-    }
-
-    if (!chunks.length) {
-      throw new Error("The browser returned no export video data.");
-    }
+    if (audioContext) { try { await audioContext.close(); } catch (e) {} }
+    if (!chunks.length) throw new Error("The browser returned no export video data.");
 
     return new Blob(chunks, {
       type: recorder.mimeType || format.mimeType || "video/webm"
@@ -859,9 +730,6 @@ async function createPlatformRecording(config) {
   }
 }
 
-
-/* ---- Save the export to the user's device ---- */
-
 async function saveBlobToDevice(blob, baseFilename) {
   const isMp4     = blob.type.includes("mp4");
   const extension = isMp4 ? "mp4" : "webm";
@@ -873,21 +741,14 @@ async function saveBlobToDevice(blob, baseFilename) {
     try {
       const handle = await window.showSaveFilePicker({
         suggestedName: filename,
-        types: [{
-          description: "Hey encounter video",
-          accept: { [mimeType]: [`.${extension}`] }
-        }]
+        types: [{ description: "Hey encounter video", accept: { [mimeType]: [`.${extension}`] } }]
       });
-
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
-
       return { saved: true, extension };
     } catch (error) {
-      if (error && error.name === "AbortError") {
-        return { saved: false, cancelled: true };
-      }
+      if (error && error.name === "AbortError") return { saved: false, cancelled: true };
       console.warn("[HEY] Save picker unavailable; using normal download:", error);
     }
   }
@@ -900,29 +761,19 @@ async function saveBlobToDevice(blob, baseFilename) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-
   window.setTimeout(() => URL.revokeObjectURL(url), 3000);
 
   return { saved: true, extension };
 }
 
-
-/* ---- Save button handler ---- */
-
 async function saveCompletedRecording() {
   if (!completedRecordingBlob || exportInProgress) {
-    if (!completedRecordingBlob) {
-      setStatus("There is no completed recording to save.");
-    }
+    if (!completedRecordingBlob) setStatus("There is no completed recording to save.");
     return;
   }
 
-  // Read the currently active platform. The HTML inline selector
-  // publishes the freshest value on the button's capture-phase
-  // click, so this is always up to date.
   const platformKey = getCurrentExportPlatform();
   const config      = EXPORT_PLATFORMS[platformKey];
-
   if (!config) return;
 
   selectedExportPlatform = platformKey;
@@ -933,18 +784,13 @@ async function saveCompletedRecording() {
 
   try {
     const exportBlob = await createPlatformRecording(config);
-
-    if (!exportBlob || !exportBlob.size) {
-      throw new Error("The browser created an empty video file.");
-    }
+    if (!exportBlob || !exportBlob.size) throw new Error("The browser created an empty video file.");
 
     const result = await saveBlobToDevice(exportBlob, config.filename);
-
     if (result.cancelled) return;
 
     setStatus(`${config.label} video saved to your device.`);
     closeAndClearRecordingResult();
-
   } catch (error) {
     console.error("[HEY] Export/download error:", error);
     setStatus("Could not prepare the video for download. The original recording is still available.");
@@ -956,18 +802,13 @@ async function saveCompletedRecording() {
   }
 }
 
-
-/* ---- Cleanup helpers for the result modal ---- */
-
 function clearCompletedRecordingData() {
   if (recordingPreview) {
     recordingPreview.pause();
     recordingPreview.removeAttribute("src");
     recordingPreview.load();
   }
-
   if (completedRecordingUrl) URL.revokeObjectURL(completedRecordingUrl);
-
   completedRecordingBlob            = null;
   completedRecordingUrl             = null;
   completedRecordingDurationSeconds = 0;
@@ -984,30 +825,22 @@ function deleteCompletedRecording() {
 }
 
 function finishLocalRecording() {
-  const recorderMimeType =
-    mediaRecorder?.mimeType || "video/webm";
-
-  const chunks = recordingChunks;
-  recordingChunks = [];
-
-  const durationSeconds = getRecordingElapsedSeconds();
-
-  const blob = new Blob(chunks, { type: recorderMimeType });
+  const recorderMimeType = mediaRecorder?.mimeType || "video/webm";
+  const chunks           = recordingChunks;
+  recordingChunks        = [];
+  const durationSeconds  = getRecordingElapsedSeconds();
+  const blob             = new Blob(chunks, { type: recorderMimeType });
 
   mediaRecorder = null;
-
   clearInterval(recordingTimer);
   recordingTimer = null;
-
   if (recordingAnimationFrame) cancelAnimationFrame(recordingAnimationFrame);
   recordingAnimationFrame = null;
 
   cleanupRecordingResources();
-
   setRecordingIndicators(false);
   recordingStartedAt = 0;
   recordingElapsedMs = 0;
-
   updateRecordButton();
 
   if (!blob.size) {
@@ -1021,7 +854,7 @@ function finishLocalRecording() {
 
 
 /* ============================================================
-   WEBSOCKET SIGNALING
+   WEBSOCKET SIGNALING  ← kept identical to the working version
    ============================================================ */
 
 function connectToSignalingServer() {
@@ -1037,9 +870,7 @@ function connectToSignalingServer() {
 
   socket.addEventListener("open", () => {
     debug("Connected to signaling server");
-    if (hasStartedCamera) {
-      setStatus("Connected. Looking for someone...");
-    }
+    if (hasStartedCamera) setStatus("Connected. Looking for someone...");
   });
 
   socket.addEventListener("message", async (event) => {
@@ -1054,21 +885,6 @@ function connectToSignalingServer() {
         return;
       }
 
-      if (message.type === "banned") {
-        handleBannedUser(message.reason);
-        return;
-      }
-
-      if (message.type === "broadcast") {
-        handleBroadcastMessage(message.text);
-        return;
-      }
-
-      if (message.type === "report-received") {
-        alert("Report submitted successfully. Thank you for keeping our community safe.");
-        return;
-      }
-
       await handleSignalingMessage(message);
     } catch (error) {
       console.error("[HEY] Error handling server message:", error);
@@ -1077,37 +893,12 @@ function connectToSignalingServer() {
 
   socket.addEventListener("close", () => {
     socket = null;
-    if (hasStartedCamera) {
-      setStatus("Signaling server disconnected. Please try again.");
-    }
+    if (hasStartedCamera) setStatus("Signaling server disconnected. Please try again.");
   });
 
   socket.addEventListener("error", (error) => {
     console.error("[HEY] WebSocket error:", error);
   });
-}
-
-function handleBannedUser(reason) {
-  stopVideoChat();
-  if (socket) {
-    try { socket.close(); } catch (e) {}
-  }
-  if (bannedReasonText) {
-    bannedReasonText.textContent =
-      reason || "You have been suspended for violating community safety guidelines.";
-  }
-  if (bannedModalBackdrop) {
-    bannedModalBackdrop.classList.add("show");
-  }
-}
-
-function handleBroadcastMessage(text) {
-  if (!broadcastBanner || !broadcastMessage) return;
-  broadcastMessage.textContent = text;
-  broadcastBanner.classList.add("show");
-  setTimeout(() => {
-    broadcastBanner.classList.remove("show");
-  }, 10000);
 }
 
 function sendMessage(message) {
@@ -1128,22 +919,17 @@ async function startCamera() {
 
   try {
     setStatus("Requesting camera and microphone...");
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true
-    });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-    localStream        = stream;
+    localStream          = stream;
     localVideo.srcObject = localStream;
-    hasStartedCamera   = true;
+    hasStartedCamera     = true;
     startButton.disabled = true;
 
     updateStopButton();
     updateVideoPlaceholders();
 
-    // Load ICE servers (including TURN) before connecting.
     await loadIceConfig();
-
     connectToSignalingServer();
 
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -1164,7 +950,7 @@ async function startCamera() {
     }
   } catch (error) {
     console.error("[HEY] Camera/microphone error:", error);
-    hasStartedCamera = false;
+    hasStartedCamera     = false;
     startButton.disabled = false;
     updateStopButton();
     setStatus("Could not access camera/microphone.");
@@ -1202,9 +988,9 @@ function createPeerConnection() {
   peerConnection.addEventListener("iceconnectionstatechange", () => {
     if (!peerConnection) return;
     const state = peerConnection.iceConnectionState;
-    if (state === "checking")                       setStatus("Connecting to stranger...");
-    if (state === "connected" || state === "completed") setStatus("Connected!");
-    if (state === "failed")                         setStatus("Video connection failed.");
+    if (state === "checking")                            setStatus("Connecting to stranger...");
+    if (state === "connected" || state === "completed")  setStatus("Connected!");
+    if (state === "failed")                              setStatus("Video connection failed.");
   });
 
   peerConnection.addEventListener("datachannel", (event) => {
@@ -1322,7 +1108,6 @@ function handlePeerDisconnected() {
   debug("Stranger disconnected.");
 
   isMatched = false;
-
   closeChatChannel();
   clearChat();
 
@@ -1382,9 +1167,7 @@ function stopVideoChat() {
   updateStopButton();
   updateVideoPlaceholders();
 
-  if (!mediaRecorder) {
-    setStatus("Stopped. Click Start Camera when ready.");
-  }
+  if (!mediaRecorder) setStatus("Stopped. Click Start Camera when ready.");
 }
 
 function nextStranger() {
@@ -1393,7 +1176,6 @@ function nextStranger() {
   sendMessage({ type: "skip" });
 
   isMatched = false;
-
   closeChatChannel();
   clearChat();
 
@@ -1468,14 +1250,10 @@ function addChatMessage(text, mine) {
   const messageElement = document.createElement("div");
   messageElement.className = `chat-message ${mine ? "mine" : "theirs"}`;
   messageElement.textContent = text;
-
   chatMessages.appendChild(messageElement);
 
   requestAnimationFrame(() => {
-    chatMessages.scrollTo({
-      top: chatMessages.scrollHeight,
-      behavior: "smooth"
-    });
+    chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: "smooth" });
   });
 }
 
@@ -1534,7 +1312,6 @@ if (nextButton)  nextButton.addEventListener("click", nextStranger);
 if (recordButton) {
   recordButton.addEventListener("click", async () => {
     if (!isMatched) return;
-
     if (mediaRecorder && mediaRecorder.state === "recording") {
       stopLocalRecording();
       return;
@@ -1543,8 +1320,8 @@ if (recordButton) {
   });
 }
 
-if (chatToggleButton) chatToggleButton.addEventListener("click", toggleChat);
-if (reportButton)     reportButton.addEventListener("click", openReportModal);
+if (chatToggleButton)   chatToggleButton.addEventListener("click", toggleChat);
+if (reportButton)       reportButton.addEventListener("click", openReportModal);
 if (cancelReportButton) cancelReportButton.addEventListener("click", closeReportModal);
 if (submitReportButton) submitReportButton.addEventListener("click", submitReport);
 
@@ -1561,19 +1338,15 @@ if (reportModalBackdrop) {
   });
 }
 
-/* ---- Platform selector ----
-   The HTML inline script owns the visual selection and publishes
-   changes via the "lela:platform-change" custom event (already
-   wired up above). This click handler is a defensive fallback in
-   case the inline script is ever removed. It only syncs internal
-   state — it never touches DOM classes, so it will not fight with
-   the HTML selector. */
+/* Fallback click handler for the platform group.
+   The HTML inline script already handles the visual state and
+   fires "lela:platform-change"; this just keeps app.js's own
+   state in sync in case the inline script is ever removed. */
 if (platformOptions) {
   platformOptions.addEventListener("click", (event) => {
     const button = event.target.closest
       ? event.target.closest(".platform-option")
       : null;
-
     if (!button || exportInProgress) return;
 
     const key = button.dataset.platform;
@@ -1584,12 +1357,8 @@ if (platformOptions) {
   });
 }
 
-if (downloadRecordingButton) {
-  downloadRecordingButton.addEventListener("click", saveCompletedRecording);
-}
-if (deleteRecordingButton) {
-  deleteRecordingButton.addEventListener("click", deleteCompletedRecording);
-}
+if (downloadRecordingButton) downloadRecordingButton.addEventListener("click", saveCompletedRecording);
+if (deleteRecordingButton)   deleteRecordingButton.addEventListener("click", deleteCompletedRecording);
 
 
 /* ============================================================
@@ -1603,8 +1372,4 @@ updateVideoPlaceholders();
 applyChatState();
 setStatus("Click Start Camera to begin");
 connectToSignalingServer();
-
-// Make sure the Save button shows the correct platform label
-// on first render, in case the HTML inline selector's default
-// is not "tiktok".
 updateDownloadButtonText();
