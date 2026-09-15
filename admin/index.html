@@ -1,876 +1,1624 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LELA — Admin Control Center</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ሌላ — Random Video Chat</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="shortcut icon" href="./svgbg.png" type="image/x-icon">
 
   <style>
     :root {
       --bg-dark: #080a12;
-      --card-bg: rgba(18, 22, 41, 0.75);
+      --card-bg: rgba(18, 22, 41, 0.7);
       --card-border: rgba(255, 255, 255, 0.08);
       --accent-purple: #7c4dff;
       --accent-purple-hover: #9166ff;
-      --accent-glow: rgba(124, 77, 255, 0.35);
+      --accent-glow: rgba(124, 77, 255, 0.4);
       --danger: #ef4444;
-      --danger-hover: #dc2626;
-      --success: #10b981;
-      --warning: #f59e0b;
       --text-main: #f3f4f6;
       --text-muted: #9ca3af;
-      --glass-bg: rgba(12, 16, 32, 0.85);
+      --glass-bg: rgba(12, 16, 32, 0.75);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    body {
-      background: radial-gradient(circle at 10% 20%, #151838 0%, transparent 40%),
-                  radial-gradient(circle at 90% 80%, #21123d 0%, transparent 40%),
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at 15% 20%, #151838 0%, transparent 45%),
+                  radial-gradient(circle at 85% 80%, #21123d 0%, transparent 45%),
                   var(--bg-dark);
       color: var(--text-main);
-      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .app {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
+    }
+
+    /* ---------------- SYSTEM BROADCAST BANNER ---------------- */
+    .system-broadcast-banner {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: linear-gradient(90deg, #7c4dff, #ec4899);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 100;
+      animation: slideDown 0.3s ease;
+    }
+
+    .system-broadcast-banner.show {
+      display: flex;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0); }
     }
 
     /* ---------------- HEADER ---------------- */
-    header {
-      height: 70px;
+
+    .top-bar {
+      height: 64px;
+      min-height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 32px;
-      background: rgba(8, 10, 18, 0.9);
+      padding: 0 20px;
+      background: rgba(8, 10, 18, 0.85);
       border-bottom: 1px solid var(--card-border);
       backdrop-filter: blur(16px);
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      z-index: 30;
     }
 
-    .brand {
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .logo-image-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      mix-blend-mode: screen;
+    }
+
+    .logo-img {
+      height: 42px;
+      width: auto;
+      display: block;
+      filter: contrast(1.08) brightness(1.05);
+    }
+
+    .logo-text {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #00e5ff 0%, #7c4dff 50%, #ff55ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+    }
+
+    .header-right {
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
-    .brand-title {
-      font-size: 22px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #00e5ff 0%, #7c4dff 50%, #ff55ff 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .admin-badge {
-      background: rgba(124, 77, 255, 0.2);
-      border: 1px solid rgba(124, 77, 255, 0.4);
-      color: #c4b5fd;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-    .dot.green { background: #10b981; box-shadow: 0 0 8px #10b981; }
-    .dot.amber { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
-    .dot.red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
-
-    .btn {
-      height: 38px;
-      padding: 0 16px;
-      border-radius: 9px;
-      font-weight: 600;
+    .status {
       font-size: 13px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
-      transition: all 0.2s ease;
-    }
-
-    .btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      transform: translateY(-1px);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent-purple) 0%, #6366f1 100%);
-      border: none;
-      color: white;
-      box-shadow: 0 4px 14px var(--accent-glow);
-    }
-    .btn-primary:hover {
-      background: linear-gradient(135deg, var(--accent-purple-hover) 0%, #7180ff 100%);
-    }
-
-    .btn-danger {
-      background: rgba(239, 68, 68, 0.15);
-      border-color: rgba(239, 68, 68, 0.35);
-      color: #fca5a5;
-    }
-    .btn-danger:hover {
-      background: rgba(239, 68, 68, 0.3);
-    }
-
-    .btn-sm {
-      height: 30px;
-      padding: 0 10px;
-      font-size: 12px;
-      border-radius: 6px;
-    }
-
-    /* ---------------- MAIN CONTAINER ---------------- */
-    .container {
-      max-width: 1400px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    /* ---------------- STAT CARDS ---------------- */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .stat-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    }
-
-    .stat-label {
-      font-size: 13px;
-      color: var(--text-muted);
       font-weight: 500;
-    }
-
-    .stat-value {
-      font-size: 28px;
-      font-weight: 800;
-      color: #fff;
-    }
-
-    .stat-sub {
-      font-size: 12px;
       color: var(--text-muted);
-    }
-
-    /* ---------------- TABS ---------------- */
-    .tabs {
-      display: flex;
-      gap: 10px;
-      border-bottom: 1px solid var(--card-border);
-      padding-bottom: 12px;
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 14px;
-      font-weight: 600;
-      padding: 8px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .tab-btn:hover {
-      color: #fff;
       background: rgba(255, 255, 255, 0.04);
-    }
-
-    .tab-btn.active {
-      color: #fff;
-      background: rgba(124, 77, 255, 0.2);
-      border: 1px solid rgba(124, 77, 255, 0.4);
-    }
-
-    /* ---------------- PANELS ---------------- */
-    .panel {
-      display: none;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-
-    .panel.active {
-      display: block;
-    }
-
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 18px;
-    }
-
-    .panel-title {
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    /* ---------------- TABLES ---------------- */
-    .table-responsive {
-      overflow-x: auto;
-      border-radius: 10px;
-      border: 1px solid var(--card-border);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 13px;
-    }
-
-    th {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 12px 16px;
-      font-weight: 600;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--card-border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
       white-space: nowrap;
     }
 
-    td {
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      color: var(--text-main);
-      vertical-align: middle;
-    }
-
-    tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    .tag {
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      display: inline-block;
-    }
-    .tag-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .tag-reviewed { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .tag-banned { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .tag-dismissed { background: rgba(156, 163, 175, 0.15); color: #9ca3af; border: 1px solid rgba(156, 163, 175, 0.3); }
-
-    /* ---------------- FORMS ---------------- */
-    .form-row {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-
-    .input-field {
-      flex: 1;
-      min-width: 220px;
-      height: 42px;
-      background: rgba(10, 14, 28, 0.8);
+    .online-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
       border: 1px solid var(--card-border);
-      border-radius: 9px;
-      color: #fff;
-      padding: 0 14px;
-      font-size: 14px;
-      outline: none;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
     }
 
-    .input-field:focus {
-      border-color: var(--accent-purple);
-      box-shadow: 0 0 10px rgba(124, 77, 255, 0.3);
+    .online-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+      animation: pulse 2s infinite;
     }
 
-    /* ---------------- LOGIN OVERLAY ---------------- */
-    .login-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(8, 10, 18, 0.96);
-      backdrop-filter: blur(20px);
-      z-index: 100;
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* ---------------- MAIN LAYOUT ---------------- */
+
+    .main-container {
+      flex: 1;
+      padding: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .video-grid {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr;
+      gap: 16px;
+      position: relative;
+    }
+
+    .video-card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .login-card {
+    video {
       width: 100%;
-      max-width: 400px;
-      background: #121629;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #0c0e1a;
+    }
+
+    #localVideo { transform: scaleX(-1); }
+    #remoteVideo { transform: none; }
+
+    .video-label {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 5;
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: var(--glass-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 12px;
+      font-weight: 600;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ---------------- PLACEHOLDERS ---------------- */
+
+    .video-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 14px;
+      color: var(--text-muted);
+      background: radial-gradient(circle at center, rgba(124, 77, 255, 0.08), transparent 60%), #0c0e1a;
+      pointer-events: none;
+      text-align: center;
+      padding: 16px;
+    }
+
+    .placeholder-icon {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      color: #9ca3af;
+    }
+
+    .placeholder-icon svg {
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 0 8px rgba(124, 77, 255, 0.3));
+    }
+
+    .radar-sweep {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-purple);
+      opacity: 0;
+      animation: radar 2s infinite ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes radar {
+      0% { transform: scale(0.3); opacity: 0.8; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    .radar-sweep.delayed { animation-delay: 1s; }
+
+    .placeholder-text {
+      font-size: 15px;
+      color: #8b90a0;
+    }
+
+    /* ---------------- IN-VIDEO CHAT OVERLAY ---------------- */
+
+    .chat-panel {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 55%;
+      pointer-events: none;
+    }
+
+    .chat-panel * { pointer-events: auto; }
+
+    .chat-panel.chat-off .chat-messages {
+      opacity: 0.35;
+      filter: grayscale(0.5);
+    }
+
+    .chat-panel.chat-off .chat-input-row {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .chat-panel.chat-off .chat-input { cursor: not-allowed; }
+
+    .chat-panel.chat-off .chat-input::placeholder {
+      color: rgba(255, 255, 255, 0.35);
+      font-style: italic;
+    }
+
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      max-height: 180px;
+      padding: 12px 4px 2px 4px;
+      scroll-behavior: smooth;
+      overscroll-behavior: contain;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
+    }
+
+    .chat-messages::-webkit-scrollbar { display: none; }
+
+    .chat-message {
+      width: fit-content;
+      max-width: 85%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      word-break: break-word;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideUpFade {
+      0% { opacity: 0; transform: translateY(12px) scale(0.95); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .chat-message.mine {
+      align-self: flex-end;
+      background: rgba(124, 77, 255, 0.85);
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .chat-message.theirs {
+      align-self: flex-start;
+      background: rgba(18, 22, 41, 0.85);
+      color: var(--text-main);
+      border-bottom-left-radius: 2px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      background: rgba(10, 14, 28, 0.85);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .chat-input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: white;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 0 8px;
+    }
+
+    .chat-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+
+    .send-button {
+      height: 34px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent-purple);
+      color: white;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .send-button:hover { background: var(--accent-purple-hover); }
+
+    /* ---------------- CONTROL BAR ---------------- */
+
+    .controls {
+      min-height: 76px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 28px;
+      padding: 12px 24px;
+      background: rgba(8, 10, 18, 0.9);
+      border-top: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      z-index: 30;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .control-button {
+      height: 46px;
+      padding: 0 20px;
+      border-radius: 13px;
       border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition:
+        transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+        background 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease;
+    }
+
+    .control-button:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    .control-button:active:not(:disabled) {
+      transform: translateY(0) scale(0.97);
+    }
+
+    .control-button:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .control-button.primary {
+      background: linear-gradient(135deg, var(--accent-purple) 0%, #6366f1 100%);
+      border: none;
+      color: white;
+      box-shadow: 0 4px 18px var(--accent-glow);
+    }
+
+    .control-button.primary:hover:not(:disabled) {
+      box-shadow: 0 6px 26px rgba(124, 77, 255, 0.55);
+      background: linear-gradient(135deg, var(--accent-purple-hover) 0%, #7180ff 100%);
+    }
+
+    .control-button.stop {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .control-button.stop:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.28);
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.25);
+    }
+
+    .control-button.record {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.32);
+      color: #fca5a5;
+    }
+
+    .control-button.record:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.24);
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.2);
+    }
+
+    .control-button.record.recording {
+      background: rgba(239, 68, 68, 0.24);
+      border-color: rgba(239, 68, 68, 0.65);
+      color: #fecaca;
+    }
+
+    .recording-indicator {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 8;
+      display: none;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(20, 8, 12, 0.82);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      color: #fecaca;
+      font-size: 11px;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .recording-indicator.show { display: inline-flex; }
+
+    .recording-indicator-global {
+      position: static;
+      align-self: center;
+      width: max-content;
+      margin: 0 auto 10px;
+      transform: none;
+      z-index: 20;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+      pointer-events: none;
+    }
+
+    .recording-indicator-global.show { display: inline-flex; }
+
+    .recording-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+      animation: recordingPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes recordingPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .control-button.report {
+      background: transparent;
+      border-color: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .control-button.report:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.4);
+      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.18);
+    }
+
+    /* ---------------- MODALS ---------------- */
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    .report-modal {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
       border-radius: 20px;
-      padding: 32px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      background: #121526;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+    }
+
+    .report-modal h2 { margin-bottom: 8px; font-size: 20px; }
+    .report-modal p { margin-bottom: 18px; color: var(--text-muted); font-size: 14px; }
+    .report-options { display: flex; flex-direction: column; gap: 10px; }
+
+    .report-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .report-option:hover { background: rgba(255, 255, 255, 0.06); }
+
+    .report-option input { accent-color: var(--accent-purple); }
+
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+    .modal-button {
+      height: 40px;
+      padding: 0 15px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      color: white;
+      background: rgba(255, 255, 255, 0.05);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .modal-button:hover { background: rgba(255, 255, 255, 0.1); }
+
+    .modal-button.submit {
+      background: linear-gradient(135deg, var(--accent-purple) 0%, #6366f1 100%);
+      border: none;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    /* ---------------- RECORDING RESULT MODAL ---------------- */
+
+    .recording-result-modal {
+      width: 100%;
+      max-width: 720px;
+      padding: 22px;
+      border-radius: 20px;
+      background: #121526;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+      max-height: 92vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .recording-result-modal h2 { margin-bottom: 8px; font-size: 20px; }
+    .recording-result-modal p { margin-bottom: 16px; color: var(--text-muted); font-size: 14px; }
+
+    .recording-preview {
+      display: block;
+      width: min(100%, 360px);
+      height: auto;
+      max-height: 52vh;
+      margin: 0 auto;
+      aspect-ratio: 9 / 16;
+      border-radius: 14px;
+      background: #080a12;
+      border: 1px solid var(--card-border);
+      object-fit: contain;
+    }
+
+    .recording-local-note {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border-radius: 11px;
+      background: rgba(74, 222, 128, 0.06);
+      border: 1px solid rgba(74, 222, 128, 0.14);
+      color: #cbd9d1;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    /* ---------------- PLATFORM / FORMAT SELECTOR ---------------- */
+
+    .platform-title {
+      margin-top: 18px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: var(--text-main);
+    }
+
+    .platform-options {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .platform-option {
+      position: relative;
+      min-width: 0;
+      min-height: 82px;
+      padding: 10px 6px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.2;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      text-align: center;
+      transition:
+        transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+        background 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease;
+    }
+
+    .platform-option:hover {
+      background: rgba(255, 255, 255, 0.07);
+      transform: translateY(-2px);
+    }
+
+    .platform-option:active { transform: translateY(0) scale(0.97); }
+
+    .platform-option:focus-visible {
+      outline: 2px solid var(--accent-purple);
+      outline-offset: 2px;
+    }
+
+    .platform-option.selected {
+      background: rgba(124, 77, 255, 0.18);
+      border-color: rgba(124, 77, 255, 0.7);
+      box-shadow:
+        0 0 0 1px rgba(124, 77, 255, 0.14),
+        0 6px 18px rgba(124, 77, 255, 0.22);
+    }
+
+    .platform-option.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 5px;
+      right: 6px;
+      width: 15px;
+      height: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--accent-purple);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .platform-icon { font-size: 19px; line-height: 1; }
+
+    .platform-name {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .platform-meta {
+      display: block;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .platform-option.selected .platform-meta { color: #d6c9ff; }
+
+    .platform-format-note {
+      margin-top: 10px;
+      padding: 9px 11px;
+      border-radius: 10px;
+      background: rgba(124, 77, 255, 0.07);
+      border: 1px solid rgba(124, 77, 255, 0.16);
+      color: #cdc4e8;
+      font-size: 11.5px;
+      line-height: 1.45;
+      transition: opacity 0.18s ease;
+    }
+
+    .platform-format-note.flash { animation: noteFlash 0.35s ease; }
+
+    @keyframes noteFlash {
+      0% { opacity: 0.3; transform: translateY(3px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .recording-result-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .modal-button.delete {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.28);
+    }
+
+    /* ---------------- BANNED MODAL ---------------- */
+    .banned-modal {
+      width: 100%;
+      max-width: 440px;
+      padding: 28px;
+      border-radius: 20px;
+      background: #180d14;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      box-shadow: 0 30px 90px rgba(239, 68, 68, 0.3);
       text-align: center;
     }
 
-    .login-card h2 {
-      font-size: 24px;
-      margin-bottom: 8px;
+    .banned-icon { font-size: 48px; margin-bottom: 12px; }
+
+    .banned-modal h2 {
+      color: #ef4444;
+      font-size: 22px;
+      margin-bottom: 10px;
     }
 
-    .login-card p {
-      color: var(--text-muted);
-      font-size: 13px;
-      margin-bottom: 24px;
+    .banned-modal p {
+      color: #e5e7eb;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
-    .login-form {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      text-align: left;
+    /* ==========================================================================
+       RESPONSIVE
+       ========================================================================== */
+
+    @media (max-width: 680px) {
+      .top-bar {
+        padding: 0 12px;
+        height: 56px;
+        min-height: 56px;
+      }
+
+      .logo-img { height: 34px; }
+      .logo-text { font-size: 22px; }
+
+      .status { display: none; }
+      .online-count { font-size: 12px; padding: 4px 10px; }
+
+      .main-container { padding: 8px; }
+
+      .video-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1.25fr);
+        gap: 10px;
+      }
+
+      .video-card { border-radius: 12px; }
+
+      .video-label {
+        font-size: 10px;
+        padding: 4px 8px;
+        top: 8px;
+        left: 8px;
+      }
+
+      .placeholder-icon { width: 32px; height: 32px; }
+      .placeholder-icon svg { width: 26px; height: 26px; }
+      .placeholder-text { font-size: 12px; }
+      .radar-sweep { width: 60px; height: 60px; }
+
+      .chat-message { font-size: 11px; padding: 6px 8px; }
+      .chat-messages { max-height: 110px; }
+      .chat-input-row { padding: 4px; }
+      .chat-input { font-size: 12px; }
+      .send-button { height: 28px; padding: 0 10px; font-size: 11px; }
+
+      .chat-panel {
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+      }
+
+      .controls {
+        min-height: 64px;
+        padding: 10px 12px;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .control-group {
+        gap: 8px;
+        flex: 1;
+        justify-content: center;
+      }
+
+      .control-button {
+        height: 40px;
+        padding: 0 14px;
+        font-size: 12px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .recording-result-modal { padding: 16px; border-radius: 16px; }
+      .recording-indicator-global { margin-bottom: 8px; }
+      .recording-preview { width: 100%; max-height: 40vh; }
+
+      .platform-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+      .platform-option {
+        min-height: 72px;
+        font-size: 10.5px;
+      }
+
+      .recording-result-actions { justify-content: stretch; }
+      .recording-result-actions .modal-button { flex: 1 1 100%; }
     }
 
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 6px;
+    @media (max-width: 380px) {
+      .logo-text { font-size: 18px; }
+      .control-button { padding: 0 10px; font-size: 11px; }
+      .platform-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
+
 <body>
+  <div class="app">
 
-  <!-- LOGIN OVERLAY -->
-  <div id="loginOverlay" class="login-overlay">
-    <div class="login-card">
-      <div class="brand" style="justify-content: center; margin-bottom: 16px;">
-        <span class="brand-title">ሌላ</span>
-        <span class="admin-badge">Admin</span>
-      </div>
-      <h2>Moderation Portal</h2>
-      <p>Enter your administrator credentials to access the live monitoring and moderation console.</p>
-
-      <form id="loginForm" class="login-form">
-        <div class="form-group">
-          <label>Admin Username / Email</label>
-          <input type="text" id="adminUsername" class="input-field" style="width:100%" placeholder="admin" required />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="adminPassword" class="input-field" style="width:100%" placeholder="••••••••" required />
-        </div>
-        <div id="loginError" style="color: #ef4444; font-size: 13px; display: none;"></div>
-        <button type="submit" class="btn btn-primary" style="height: 44px; margin-top: 8px;">
-          Authenticate
-        </button>
-      </form>
+    <!-- ADMIN BROADCAST BANNER -->
+    <div id="broadcastBanner" class="system-broadcast-banner">
+      <span id="broadcastMessage">System announcement</span>
     </div>
+
+    <!-- HEADER -->
+    <header class="top-bar">
+      <a href="#" class="logo">
+        <div class="logo-image-wrapper">
+          <img src="svgbg.png" alt="LELA Logo" class="logo-img" onerror="this.style.display='none'" />
+        </div>
+        <span class="logo-text">ሌላ</span>
+      </a>
+
+      <div class="header-right">
+        <div id="status" class="status">
+          Click Start Camera to begin
+        </div>
+
+        <div
+          id="onlineCount"
+          class="online-count"
+          aria-live="polite"
+          title="People currently connected"
+        >
+          <span class="online-dot"></span>
+          <span id="onlineCountText">0 online</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN VIEW -->
+    <main class="main-container">
+
+      <!-- RECORDING STATUS: ABOVE THE VIDEO AREA, NEVER OVER THE VIDEO -->
+      <div id="recordingStatus" class="recording-indicator recording-indicator-global" aria-live="polite">
+        <span class="recording-dot"></span>
+        <span>Recording <strong id="recordingTime">00:00</strong></span>
+      </div>
+
+      <div class="video-grid">
+
+        <!-- STRANGER CARD -->
+        <section class="video-card">
+          <video
+            id="remoteVideo"
+            autoplay
+            playsinline
+          ></video>
+
+          <div class="video-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Stranger
+          </div>
+
+          <div
+            id="remotePlaceholder"
+            class="video-placeholder"
+          >
+            <div class="placeholder-icon">
+              <div class="radar-sweep"></div>
+              <div class="radar-sweep delayed"></div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
+            <div class="placeholder-text">
+              Waiting for partner...
+            </div>
+          </div>
+
+        </section>
+
+        <!-- YOU CARD -->
+        <section class="video-card">
+          <video
+            id="localVideo"
+            autoplay
+            muted
+            playsinline
+          ></video>
+
+          <div class="video-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+            You
+          </div>
+
+          <div
+            id="localPlaceholder"
+            class="video-placeholder"
+          >
+            <div class="placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            </div>
+            <div class="placeholder-text">
+              Camera Off
+            </div>
+          </div>
+
+          <!-- CHAT FLOATING OVER YOUR VIDEO -->
+          <div class="chat-panel">
+
+            <div
+              id="chatMessages"
+              class="chat-messages"
+            ></div>
+
+            <form
+              id="chatForm"
+              class="chat-input-row"
+            >
+              <input
+                id="chatInput"
+                class="chat-input"
+                type="text"
+                maxlength="500"
+                autocomplete="off"
+                placeholder="Type a message..."
+              />
+
+              <button
+                id="sendChatButton"
+                class="send-button"
+                type="submit"
+              >
+                Send
+              </button>
+            </form>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- CONTROLS -->
+    <footer class="controls">
+
+      <div class="control-group">
+        <button
+          id="startButton"
+          class="control-button primary"
+          type="button"
+        >
+          🎥 Start Camera
+        </button>
+
+        <button
+          id="stopButton"
+          class="control-button stop"
+          type="button"
+          disabled
+        >
+          ⏹ Stop
+        </button>
+      </div>
+
+      <div class="control-group">
+        <button
+          id="nextButton"
+          class="control-button primary"
+          type="button"
+          disabled
+        >
+          ⏭ Next
+        </button>
+
+        <button
+          id="recordButton"
+          class="control-button record"
+          type="button"
+          disabled
+        >
+          🔴 Record
+        </button>
+
+        <button
+          id="chatToggleButton"
+          class="control-button"
+          type="button"
+          disabled
+        >
+          💬 Chat: ON
+        </button>
+
+        <button
+          id="reportButton"
+          class="control-button report"
+          type="button"
+          disabled
+        >
+          🚩 Report
+        </button>
+      </div>
+
+    </footer>
+
   </div>
 
-  <!-- HEADER -->
-  <header>
-    <div class="brand">
-      <a href="/" style="text-decoration:none" class="brand-title">ሌላ</a>
-      <span class="admin-badge">Admin Console</span>
-    </div>
+  <!-- RECORDING RESULT MODAL -->
+  <div id="recordingResultBackdrop" class="modal-backdrop">
+    <div class="recording-result-modal">
+      <h2>Your encounter is ready 🎬</h2>
 
-    <div class="header-actions">
-      <div class="status-pill" id="redisStatus">
-        <span class="dot amber"></span> Redis: Checking...
-      </div>
-      <div class="status-pill" id="supabaseStatus">
-        <span class="dot amber"></span> Supabase: Checking...
-      </div>
-      <button class="btn btn-sm" onclick="fetchAdminData()">🔄 Refresh</button>
-      <button class="btn btn-sm btn-danger" onclick="logoutAdmin()">Logout</button>
-    </div>
-  </header>
-
-  <!-- MAIN CONTAINER -->
-  <div class="container">
-
-    <!-- STAT CARDS -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <span class="stat-label">Online Clients</span>
-        <span class="stat-value" id="statOnline">0</span>
-        <span class="stat-sub">WebSocket connections</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Waiting Queue</span>
-        <span class="stat-value" id="statWaiting">0</span>
-        <span class="stat-sub">Waiting for strangers</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Active Pairs</span>
-        <span class="stat-value" id="statPairs">0</span>
-        <span class="stat-sub">Engaged in video chat</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">User Reports</span>
-        <span class="stat-value" id="statReports">0</span>
-        <span class="stat-sub">Total reports received</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Active Bans</span>
-        <span class="stat-value" id="statBans">0</span>
-        <span class="stat-sub">Blocked IP addresses</span>
-      </div>
-    </div>
-
-    <!-- TABS NAVIGATION -->
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('reportsPanel')">🚩 Reports Queue (<span id="tabReportsCount">0</span>)</button>
-      <button class="tab-btn" onclick="switchTab('usersPanel')">👥 Connected Clients (<span id="tabUsersCount">0</span>)</button>
-      <button class="tab-btn" onclick="switchTab('bansPanel')">🚫 Banned IPs (<span id="tabBansCount">0</span>)</button>
-      <button class="tab-btn" onclick="switchTab('broadcastPanel')">📢 Announcement Banner</button>
-    </div>
-
-    <!-- PANEL 1: REPORTS QUEUE -->
-    <div id="reportsPanel" class="panel active">
-      <div class="panel-header">
-        <h3 class="panel-title">User Violation Reports</h3>
-        <button class="btn btn-sm" onclick="fetchReports()">Refresh Reports</button>
-      </div>
-      <div class="table-responsive">
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Reported Client / IP</th>
-              <th>Reporter Client / IP</th>
-              <th>Reason</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="reportsTableBody">
-            <tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Loading reports...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- PANEL 2: CONNECTED CLIENTS -->
-    <div id="usersPanel" class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">Active Live Connections</h3>
-        <button class="btn btn-sm" onclick="fetchLiveConnections()">Refresh Connections</button>
-      </div>
-      <div class="table-responsive">
-        <table>
-          <thead>
-            <tr>
-              <th>Client ID</th>
-              <th>IP Address</th>
-              <th>Status</th>
-              <th>Matched Peer</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="usersTableBody">
-            <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Loading active clients...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- PANEL 3: BANNED IPS -->
-    <div id="bansPanel" class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">Blocked IP Addresses</h3>
-      </div>
-
-      <!-- Quick Ban Form -->
-      <form id="quickBanForm" class="form-row" onsubmit="handleManualBan(event)">
-        <input type="text" id="banIpInput" class="input-field" placeholder="IP Address (e.g. 192.168.1.50)" required />
-        <input type="text" id="banReasonInput" class="input-field" placeholder="Reason (e.g. Harassment)" required />
-        <button type="submit" class="btn btn-danger">🚫 Block IP</button>
-      </form>
-
-      <div class="table-responsive">
-        <table>
-          <thead>
-            <tr>
-              <th>IP Address</th>
-              <th>Reason</th>
-              <th>Banned By</th>
-              <th>Date Banned</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="bansTableBody">
-            <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Loading ban list...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- PANEL 4: BROADCAST -->
-    <div id="broadcastPanel" class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">Send Broadcast Announcement</h3>
-      </div>
-      <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
-        Publish a real-time banner alert to all active users currently connected to the chat platform.
+      <p id="recordingResultText">
+        Your recording was created locally on this device.
       </p>
 
-      <form onsubmit="handleSendBroadcast(event)">
-        <div class="form-row">
-          <input type="text" id="broadcastInput" class="input-field" placeholder="e.g. Server maintenance scheduled in 10 minutes..." required />
-          <button type="submit" class="btn btn-primary">Publish Announcement</button>
-        </div>
-      </form>
-    </div>
+      <video
+        id="recordingPreview"
+        class="recording-preview"
+        controls
+        playsinline
+        preload="metadata"
+      ></video>
 
+      <div id="recordingLocalNote" class="recording-local-note">
+        🔒 <strong>Not uploaded.</strong>
+        The recording is only in this browser right now.
+        Pick a target format below — the export is prepared on this device.
+      </div>
+
+      <div id="platformTitle" class="platform-title">Where are you sharing this?</div>
+
+      <div
+        id="platformOptions"
+        class="platform-options"
+        role="radiogroup"
+        aria-labelledby="platformTitle"
+      >
+        <button
+          type="button"
+          class="platform-option selected"
+          data-platform="tiktok"
+          role="radio"
+          aria-checked="true"
+        >
+          <span class="platform-icon" aria-hidden="true">🎵</span>
+          <span class="platform-name">TikTok</span>
+          <span class="platform-meta">9:16 · 1080p</span>
+        </button>
+
+        <button
+          type="button"
+          class="platform-option"
+          data-platform="instagram"
+          role="radio"
+          aria-checked="false"
+        >
+          <span class="platform-icon" aria-hidden="true">📸</span>
+          <span class="platform-name">Reels</span>
+          <span class="platform-meta">9:16 · 1080p</span>
+        </button>
+
+        <button
+          type="button"
+          class="platform-option"
+          data-platform="shorts"
+          role="radio"
+          aria-checked="false"
+        >
+          <span class="platform-icon" aria-hidden="true">▶️</span>
+          <span class="platform-name">Shorts</span>
+          <span class="platform-meta">9:16 · 60s</span>
+        </button>
+
+        <button
+          type="button"
+          class="platform-option"
+          data-platform="youtube"
+          role="radio"
+          aria-checked="false"
+        >
+          <span class="platform-icon" aria-hidden="true">📺</span>
+          <span class="platform-name">YouTube</span>
+          <span class="platform-meta">16:9 · 1080p</span>
+        </button>
+
+        <button
+          type="button"
+          class="platform-option"
+          data-platform="original"
+          role="radio"
+          aria-checked="false"
+        >
+          <span class="platform-icon" aria-hidden="true">💾</span>
+          <span class="platform-name">Original</span>
+          <span class="platform-meta">As recorded</span>
+        </button>
+      </div>
+
+      <div id="platformFormatNote" class="platform-format-note" role="status" aria-live="polite">
+        Vertical 9:16 · 1080 × 1920 · caption-safe zones kept clear
+      </div>
+
+      <div class="recording-result-actions">
+        <button
+          id="downloadRecordingButton"
+          class="modal-button submit"
+          type="button"
+        >
+          ⬇ Save to device
+        </button>
+
+        <button
+          id="deleteRecordingButton"
+          class="modal-button delete"
+          type="button"
+        >
+          🗑 Delete recording
+        </button>
+      </div>
+    </div>
   </div>
 
+  <!-- REPORT MODAL -->
+  <div
+    id="reportModalBackdrop"
+    class="modal-backdrop"
+  >
+    <div class="report-modal">
+
+      <h2>Report this person</h2>
+
+      <p>
+        Please tell us why you are reporting this user.
+      </p>
+
+      <div class="report-options">
+
+        <label class="report-option">
+          <input
+            type="radio"
+            name="reportReason"
+            value="Nudity / Sexual content"
+          />
+          <span>Nudity / Sexual content</span>
+        </label>
+
+        <label class="report-option">
+          <input
+            type="radio"
+            name="reportReason"
+            value="Harassment / Bullying"
+          />
+          <span>Harassment / Bullying</span>
+        </label>
+
+        <label class="report-option">
+          <input
+            type="radio"
+            name="reportReason"
+            value="Hate / Abusive behavior"
+          />
+          <span>Hate / Abusive behavior</span>
+        </label>
+
+        <label class="report-option">
+          <input
+            type="radio"
+            name="reportReason"
+            value="Spam / Advertising"
+          />
+          <span>Spam / Advertising</span>
+        </label>
+
+        <label class="report-option">
+          <input
+            type="radio"
+            name="reportReason"
+            value="Underage user"
+          />
+          <span>Underage user</span>
+        </label>
+
+        <label class="report-option">
+          <input
+            type="radio"
+            name="reportReason"
+            value="Other"
+          />
+          <span>Other</span>
+        </label>
+
+      </div>
+
+      <div class="modal-actions">
+
+        <button
+          id="cancelReportButton"
+          class="modal-button"
+          type="button"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="submitReportButton"
+          class="modal-button submit"
+          type="button"
+        >
+          Submit Report
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BANNED MODAL -->
+  <div id="bannedModalBackdrop" class="modal-backdrop">
+    <div class="banned-modal">
+      <div class="banned-icon">🚫</div>
+      <h2>Access Suspended</h2>
+      <p id="bannedReasonText">You have been suspended from using this service due to a violation of community guidelines.</p>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       EXPORT FORMAT SELECTOR
+       --------------------------------------------------------------------------
+       Self-contained controller for the platform/format radio group.
+       It does NOT touch app.js's handlers — it only:
+         1. keeps the visual selection in sync,
+         2. updates the human-readable format note,
+         3. publishes the chosen profile on window.LELA / a DOM event,
+         4. mirrors the profile onto #downloadRecordingButton's data-* attributes
+            (in the capture phase, so app.js can read them when its click
+             handler runs).
+       ========================================================================== -->
   <script>
-    let adminToken = localStorage.getItem("lela_admin_token");
+    (function () {
+      'use strict';
 
-    function getAuthHeaders() {
-      return {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${adminToken}`
+      var PROFILES = {
+        tiktok: {
+          label: 'TikTok',
+          ratio: '9:16',
+          width: 1080,
+          height: 1920,
+          extension: 'mp4',
+          mimeType: 'video/mp4',
+          filenameSuffix: '-tiktok',
+          note: 'Vertical 9:16 · 1080 × 1920 · caption-safe zones kept clear'
+        },
+        instagram: {
+          label: 'Instagram Reels',
+          ratio: '9:16',
+          width: 1080,
+          height: 1920,
+          extension: 'mp4',
+          mimeType: 'video/mp4',
+          filenameSuffix: '-reels',
+          note: 'Vertical 9:16 · 1080 × 1920 · Reels-safe margins, up to 90s'
+        },
+        shorts: {
+          label: 'YouTube Shorts',
+          ratio: '9:16',
+          width: 1080,
+          height: 1920,
+          extension: 'mp4',
+          mimeType: 'video/mp4',
+          filenameSuffix: '-shorts',
+          note: 'Vertical 9:16 · 1080 × 1920 · trimmed to 60s max for Shorts'
+        },
+        youtube: {
+          label: 'YouTube',
+          ratio: '16:9',
+          width: 1920,
+          height: 1080,
+          extension: 'mp4',
+          mimeType: 'video/mp4',
+          filenameSuffix: '-youtube',
+          note: 'Landscape 16:9 · 1920 × 1080 · vertical source is centred over a soft blur fill'
+        },
+        original: {
+          label: 'Original',
+          ratio: 'as recorded',
+          width: null,
+          height: null,
+          extension: 'webm',
+          mimeType: 'video/webm',
+          filenameSuffix: '',
+          note: 'Untouched capture · original resolution and codec, no re-encoding'
+        }
       };
-    }
 
-    // Check login state
-    if (adminToken) {
-      document.getElementById("loginOverlay").style.display = "none";
-      fetchAdminData();
-    }
+      var DEFAULT_PLATFORM = 'tiktok';
 
-    // Login Form
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const username = document.getElementById("adminUsername").value.trim();
-      const password = document.getElementById("adminPassword").value.trim();
-      const errEl = document.getElementById("loginError");
-      errEl.style.display = "none";
+      var container   = document.getElementById('platformOptions');
+      var noteEl      = document.getElementById('platformFormatNote');
+      var downloadBtn = document.getElementById('downloadRecordingButton');
 
-      try {
-        const res = await fetch("/api/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || "Login failed");
+      if (!container) { return; }
+
+      var buttons = Array.prototype.slice.call(
+        container.querySelectorAll('.platform-option')
+      );
+
+      if (!buttons.length) { return; }
+
+      var current = DEFAULT_PLATFORM;
+
+      /* -------- publish the active profile everywhere -------- */
+
+      function publish(key) {
+        var profile = PROFILES[key] || PROFILES[DEFAULT_PLATFORM];
+
+        var payload = {
+          platform: key,
+          label: profile.label,
+          ratio: profile.ratio,
+          width: profile.width,
+          height: profile.height,
+          extension: profile.extension,
+          mimeType: profile.mimeType,
+          filenameSuffix: profile.filenameSuffix,
+          note: profile.note
+        };
+
+        window.LELA = window.LELA || {};
+        window.LELA.exportProfile = payload;
+        window.LELA.platform = key;
+
+        if (downloadBtn) {
+          downloadBtn.dataset.exportPlatform  = key;
+          downloadBtn.dataset.exportLabel     = profile.label;
+          downloadBtn.dataset.exportRatio     = profile.ratio;
+          downloadBtn.dataset.exportWidth     = profile.width  == null ? '' : String(profile.width);
+          downloadBtn.dataset.exportHeight    = profile.height == null ? '' : String(profile.height);
+          downloadBtn.dataset.exportExtension = profile.extension;
+          downloadBtn.dataset.exportMime      = profile.mimeType;
+          downloadBtn.dataset.exportSuffix    = profile.filenameSuffix;
         }
 
-        adminToken = data.token;
-        localStorage.setItem("lela_admin_token", adminToken);
-        document.getElementById("loginOverlay").style.display = "none";
-        fetchAdminData();
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.style.display = "block";
-      }
-    });
-
-    function logoutAdmin() {
-      localStorage.removeItem("lela_admin_token");
-      adminToken = null;
-      document.getElementById("loginOverlay").style.display = "flex";
-    }
-
-    function switchTab(panelId) {
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-
-      event.currentTarget.classList.add("active");
-      document.getElementById(panelId).classList.add("active");
-    }
-
-    async function fetchAdminData() {
-      if (!adminToken) return;
-      try {
-        const res = await fetch("/api/admin/stats", { headers: getAuthHeaders() });
-        if (res.status === 401) return logoutAdmin();
-        const data = await res.json();
-
-        // Update stats
-        document.getElementById("statOnline").textContent = data.onlineCount || 0;
-        document.getElementById("statWaiting").textContent = data.waitingCount || 0;
-        document.getElementById("statPairs").textContent = data.activePairsCount || 0;
-        document.getElementById("statReports").textContent = data.totalReports || 0;
-        document.getElementById("statBans").textContent = data.totalBans || 0;
-
-        // Status indicators
-        const rEl = document.getElementById("redisStatus");
-        rEl.innerHTML = data.redisConnected
-          ? `<span class="dot green"></span> Redis: Connected`
-          : `<span class="dot amber"></span> Redis: In-Memory`;
-
-        const sEl = document.getElementById("supabaseStatus");
-        sEl.innerHTML = data.supabaseConnected
-          ? `<span class="dot green"></span> Supabase: Connected`
-          : `<span class="dot amber"></span> Supabase: In-Memory`;
-
-        fetchReports();
-        fetchLiveConnections();
-        fetchBans();
-      } catch (e) {
-        console.error("Error fetching stats:", e);
-      }
-    }
-
-    async function fetchReports() {
-      if (!adminToken) return;
-      try {
-        const res = await fetch("/api/admin/reports", { headers: getAuthHeaders() });
-        const data = await res.json();
-        const tbody = document.getElementById("reportsTableBody");
-        document.getElementById("tabReportsCount").textContent = data.reports?.length || 0;
-
-        if (!data.reports || data.reports.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No reports submitted yet.</td></tr>`;
-          return;
+        try {
+          window.dispatchEvent(
+            new CustomEvent('lela:platform-change', { detail: payload })
+          );
+        } catch (err) {
+          /* CustomEvent unsupported — the global + data-* attrs still work */
         }
 
-        tbody.innerHTML = data.reports.map(r => `
-          <tr>
-            <td>${new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
-            <td><strong>Client #${r.reported_id || 'N/A'}</strong><br><small style="color:var(--text-muted)">${r.reported_ip || 'unknown'}</small></td>
-            <td>Client #${r.reporter_id || 'N/A'}<br><small style="color:var(--text-muted)">${r.reporter_ip || 'unknown'}</small></td>
-            <td><strong style="color:#fca5a5">${r.reason}</strong></td>
-            <td><span class="tag tag-${r.status}">${r.status.toUpperCase()}</span></td>
-            <td>
-              ${r.reported_ip && r.reported_ip !== 'unknown' ? `
-                <button class="btn btn-sm btn-danger" onclick="banReportedIp('${r.id}', '${r.reported_ip}', '${r.reason}')">🚫 Ban IP</button>
-              ` : ''}
-              ${r.status === 'pending' ? `
-                <button class="btn btn-sm" onclick="resolveReport('${r.id}', 'dismissed')">Dismiss</button>
-              ` : ''}
-            </td>
-          </tr>
-        `).join("");
-      } catch (e) {
-        console.error("Error fetching reports:", e);
+        return payload;
       }
-    }
 
-    async function fetchLiveConnections() {
-      if (!adminToken) return;
-      try {
-        const res = await fetch("/api/admin/connections", { headers: getAuthHeaders() });
-        const data = await res.json();
-        const tbody = document.getElementById("usersTableBody");
-        document.getElementById("tabUsersCount").textContent = data.clients?.length || 0;
+      /* -------- update the note text with a small flash -------- */
 
-        if (!data.clients || data.clients.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No active connections.</td></tr>`;
-          return;
+      function renderNote(key) {
+        if (!noteEl) { return; }
+        var profile = PROFILES[key] || PROFILES[DEFAULT_PLATFORM];
+        noteEl.textContent = profile.note;
+        noteEl.dataset.platform = key;
+
+        noteEl.classList.remove('flash');
+        /* force reflow so the animation can restart */
+        void noteEl.offsetWidth;
+        noteEl.classList.add('flash');
+      }
+
+      /* -------- selection -------- */
+
+      function select(key, options) {
+        options = options || {};
+
+        if (!PROFILES[key]) { key = DEFAULT_PLATFORM; }
+
+        current = key;
+
+        buttons.forEach(function (btn) {
+          var isOn = btn.dataset.platform === key;
+          btn.classList.toggle('selected', isOn);
+          btn.setAttribute('aria-checked', isOn ? 'true' : 'false');
+          btn.tabIndex = isOn ? 0 : -1;
+        });
+
+        renderNote(key);
+        publish(key);
+
+        if (options.focus) {
+          var active = buttons.filter(function (b) {
+            return b.dataset.platform === key;
+          })[0];
+          if (active) { active.focus(); }
+        }
+      }
+
+      /* -------- pointer interaction -------- */
+
+      container.addEventListener('click', function (event) {
+        var btn = event.target.closest
+          ? event.target.closest('.platform-option')
+          : null;
+
+        if (!btn || !container.contains(btn)) { return; }
+
+        select(btn.dataset.platform);
+      });
+
+      /* -------- keyboard interaction (radiogroup pattern) -------- */
+
+      container.addEventListener('keydown', function (event) {
+        var handledKeys = [
+          'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'
+        ];
+
+        if (handledKeys.indexOf(event.key) === -1) { return; }
+
+        var index = buttons.indexOf(document.activeElement);
+
+        if (index === -1) {
+          index = buttons.findIndex(function (b) {
+            return b.classList.contains('selected');
+          });
+          if (index === -1) { index = 0; }
         }
 
-        tbody.innerHTML = data.clients.map(c => `
-          <tr>
-            <td><strong>#${c.id}</strong></td>
-            <td><code>${c.ip}</code></td>
-            <td>
-              ${c.isMatched ? '<span class="tag tag-reviewed">In Video Chat</span>' : (c.isReady ? '<span class="tag tag-pending">Waiting Match</span>' : '<span class="tag tag-dismissed">Idle</span>')}
-            </td>
-            <td>${c.peerId ? `Client #${c.peerId}` : '—'}</td>
-            <td>
-              <button class="btn btn-sm btn-danger" onclick="kickClient(${c.id})">Kick</button>
-              <button class="btn btn-sm btn-danger" onclick="banClientIp('${c.ip}', 'Kicked and banned by admin')">Ban IP</button>
-            </td>
-          </tr>
-        `).join("");
-      } catch (e) {
-        console.error("Error fetching connections:", e);
-      }
-    }
+        var next = index;
 
-    async function fetchBans() {
-      if (!adminToken) return;
-      try {
-        const res = await fetch("/api/admin/bans", { headers: getAuthHeaders() });
-        const data = await res.json();
-        const tbody = document.getElementById("bansTableBody");
-        document.getElementById("tabBansCount").textContent = data.bans?.length || 0;
-
-        if (!data.bans || data.bans.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No active bans.</td></tr>`;
-          return;
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+          next = (index + 1) % buttons.length;
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+          next = (index - 1 + buttons.length) % buttons.length;
+        } else if (event.key === 'Home') {
+          next = 0;
+        } else if (event.key === 'End') {
+          next = buttons.length - 1;
         }
 
-        tbody.innerHTML = data.bans.map(b => `
-          <tr>
-            <td><strong><code>${b.ip}</code></strong></td>
-            <td>${b.reason}</td>
-            <td>${b.banned_by || 'admin'}</td>
-            <td>${new Date(b.banned_at).toLocaleString()}</td>
-            <td>
-              <button class="btn btn-sm" onclick="unbanIp('${b.ip}')">Unblock</button>
-            </td>
-          </tr>
-        `).join("");
-      } catch (e) {
-        console.error("Error fetching bans:", e);
-      }
-    }
+        event.preventDefault();
+        select(buttons[next].dataset.platform, { focus: true });
+      });
 
-    async function banReportedIp(reportId, ip, reason) {
-      if (!confirm(`Are you sure you want to block IP ${ip}?`)) return;
-      try {
-        await fetch("/api/admin/ban", {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ ip, reason: `Report violation: ${reason}` })
-        });
-        await resolveReport(reportId, 'banned');
-        fetchAdminData();
-      } catch (e) {
-        alert("Action failed: " + e.message);
-      }
-    }
+      /* -------- safety net: re-publish right before a download --------
+         Capture phase guarantees this runs before any bubble-phase
+         handler app.js has attached to the same button.               */
 
-    async function resolveReport(reportId, status) {
-      try {
-        await fetch(`/api/admin/reports/${reportId}/status`, {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ status })
-        });
-        fetchReports();
-      } catch (e) {
-        console.error("Error resolving report:", e);
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', function () {
+          publish(current);
+        }, true);
       }
-    }
 
-    async function kickClient(clientId) {
-      if (!confirm(`Disconnect client #${clientId}?`)) return;
-      try {
-        await fetch("/api/admin/kick", {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ clientId })
-        });
-        fetchAdminData();
-      } catch (e) {
-        alert("Kick failed: " + e.message);
-      }
-    }
+      /* -------- public API -------- */
 
-    async function banClientIp(ip, reason) {
-      if (!confirm(`Block IP address ${ip}?`)) return;
-      try {
-        await fetch("/api/admin/ban", {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ ip, reason })
-        });
-        fetchAdminData();
-      } catch (e) {
-        alert("Ban failed: " + e.message);
-      }
-    }
+      window.LELA = window.LELA || {};
+      window.LELA.getExportProfile = function () {
+        return window.LELA.exportProfile;
+      };
+      window.LELA.setExportPlatform = function (key) {
+        select(key);
+        return window.LELA.exportProfile;
+      };
+      window.LELA.resetExportPlatform = function () {
+        select(DEFAULT_PLATFORM);
+        return window.LELA.exportProfile;
+      };
 
-    async function unbanIp(ip) {
-      if (!confirm(`Unblock IP address ${ip}?`)) return;
-      try {
-        await fetch("/api/admin/unban", {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ ip })
-        });
-        fetchAdminData();
-      } catch (e) {
-        alert("Unban failed: " + e.message);
-      }
-    }
+      /* -------- initial state -------- */
 
-    async function handleManualBan(e) {
-      e.preventDefault();
-      const ip = document.getElementById("banIpInput").value.trim();
-      const reason = document.getElementById("banReasonInput").value.trim();
-      if (!ip) return;
-      try {
-        await fetch("/api/admin/ban", {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ ip, reason })
-        });
-        document.getElementById("banIpInput").value = "";
-        document.getElementById("banReasonInput").value = "";
-        fetchAdminData();
-      } catch (e) {
-        alert("Ban failed: " + e.message);
-      }
-    }
+      var initial = buttons.filter(function (b) {
+        return b.classList.contains('selected');
+      })[0];
 
-    async function handleSendBroadcast(e) {
-      e.preventDefault();
-      const message = document.getElementById("broadcastInput").value.trim();
-      if (!message) return;
-      try {
-        await fetch("/api/admin/broadcast", {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ message })
-        });
-        alert("Broadcast announcement published to all active users!");
-        document.getElementById("broadcastInput").value = "";
-      } catch (e) {
-        alert("Broadcast failed: " + e.message);
-      }
-    }
-
-    // Auto-refresh stats every 4 seconds
-    setInterval(() => {
-      if (adminToken && document.getElementById("loginOverlay").style.display === "none") {
-        fetchAdminData();
-      }
-    }, 4000);
+      select(initial ? initial.dataset.platform : DEFAULT_PLATFORM);
+    })();
   </script>
+
+  <script src="/app.js"></script>
 </body>
 </html>
