@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="shortcut icon" href="svgbg.png" type="image/x-icon">
+ 
 
   <style>
     :root {
@@ -99,14 +100,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      mix-blend-mode: screen;
     }
 
     .logo-img {
-      height: 42px;
-      width: auto;
+      height: 38px;
+      width: 38px;
       display: block;
-      filter: contrast(1.08) brightness(1.05);
+      object-fit: contain;
     }
 
     .logo-text {
@@ -169,11 +169,12 @@
 
     .main-container {
       flex: 1;
-      padding: 16px;
+      padding: 14px 16px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       min-height: 0;
+      gap: 12px;
     }
 
     .video-grid {
@@ -315,11 +316,6 @@
 
     .chat-panel.chat-off .chat-input { cursor: not-allowed; }
 
-    .chat-panel.chat-off .chat-input::placeholder {
-      color: rgba(255, 255, 255, 0.35);
-      font-style: italic;
-    }
-
     .chat-messages {
       display: flex;
       flex-direction: column;
@@ -329,9 +325,7 @@
       max-height: 180px;
       padding: 12px 4px 2px 4px;
       scroll-behavior: smooth;
-      overscroll-behavior: contain;
       scrollbar-width: none;
-      -ms-overflow-style: none;
       -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
       mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
     }
@@ -347,7 +341,6 @@
       line-height: 1.4;
       word-break: break-word;
       backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
@@ -381,7 +374,6 @@
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.12);
       backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
     }
 
     .chat-input {
@@ -414,16 +406,180 @@
 
     .send-button:hover { background: var(--accent-purple-hover); }
 
+    /* ---------------- SPONSORED ADS COMPONENT (ADMIN-CONTROLLED) ---------------- */
+
+    /* Desktop: Ads card placed firmly on BOTTOM LEFT */
+    .sponsored-banner-container {
+      position: fixed;
+      bottom: 86px;
+      left: 20px;
+      width: auto;
+      max-width: 380px;
+      display: none;
+      align-items: center;
+      justify-content: flex-start;
+      z-index: 35;
+      pointer-events: auto;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sponsored-banner-container.show {
+      display: flex;
+    }
+
+    .sponsored-card {
+      width: 100%;
+      max-width: 380px;
+      background: rgba(13, 17, 34, 0.94);
+      border: 1px solid rgba(124, 77, 255, 0.38);
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sponsored-badge {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(124, 77, 255, 0.25);
+      border: 1px solid rgba(124, 77, 255, 0.45);
+      color: #c4b5fd;
+      white-space: nowrap;
+    }
+
+    .sponsored-media {
+      width: 64px;
+      height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--card-border);
+      background: #080a14;
+      flex-shrink: 0;
+    }
+
+    .sponsored-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sponsored-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sponsored-desc {
+      font-size: 11px;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: none;
+    }
+
+    .sponsored-cta {
+      font-size: 11.5px;
+      color: #a78bfa;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+      width: fit-content;
+    }
+
+    .sponsored-cta:hover {
+      text-decoration: underline;
+      color: #c4b5fd;
+    }
+
+    .sponsored-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      line-height: 1;
+    }
+
+    .sponsored-close:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Floating Corner Placement Style (Desktop only) */
+    .sponsored-banner-container.corner {
+      position: fixed;
+      bottom: 86px;
+      right: 20px;
+      width: auto;
+      max-width: 320px;
+    }
+    .sponsored-banner-container.corner .sponsored-card {
+      max-width: 320px;
+    }
+
+    /* Video layout swap transition */
+    .video-grid.swapped #remoteVideoCard {
+      order: 2;
+    }
+    .video-grid.swapped #localVideoCard {
+      order: 1;
+    }
+
+    .swap-layout-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      height: 30px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+    .swap-layout-btn:hover {
+      background: rgba(124, 77, 255, 0.22);
+      border-color: rgba(124, 77, 255, 0.45);
+      color: #ffffff;
+    }
+    .swap-layout-btn:active {
+      transform: scale(0.97);
+    }
+
     /* ---------------- CONTROL BAR ---------------- */
 
     .controls {
-      min-height: 76px;
+      min-height: 72px;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 28px;
-      padding: 12px 24px;
-      background: rgba(8, 10, 18, 0.9);
+      gap: 24px;
+      padding: 10px 24px;
+      background: rgba(8, 10, 18, 0.92);
       border-top: 1px solid var(--card-border);
       backdrop-filter: blur(16px);
       z-index: 30;
@@ -437,18 +593,18 @@
 
     .control-button {
       height: 46px;
-      padding: 0 20px;
-      border-radius: 13px;
+      padding: 0 18px;
+      border-radius: 12px;
       border: 1px solid var(--card-border);
       background: rgba(255, 255, 255, 0.05);
       color: var(--text-main);
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 600;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 9px;
+      gap: 8px;
       cursor: pointer;
       white-space: nowrap;
       transition:
@@ -508,7 +664,6 @@
     .control-button.record:hover:not(:disabled) {
       background: rgba(239, 68, 68, 0.24);
       border-color: rgba(239, 68, 68, 0.5);
-      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.2);
     }
 
     .control-button.record.recording {
@@ -518,38 +673,24 @@
     }
 
     .recording-indicator {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 8;
+      position: static;
+      align-self: center;
+      width: max-content;
+      margin: 0 auto;
+      z-index: 20;
       display: none;
       align-items: center;
       gap: 7px;
-      padding: 6px 10px;
+      padding: 6px 12px;
       border-radius: 999px;
-      background: rgba(20, 8, 12, 0.82);
+      background: rgba(20, 8, 12, 0.85);
       border: 1px solid rgba(239, 68, 68, 0.45);
       color: #fecaca;
       font-size: 11px;
       font-weight: 700;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
     }
 
     .recording-indicator.show { display: inline-flex; }
-
-    .recording-indicator-global {
-      position: static;
-      align-self: center;
-      width: max-content;
-      margin: 0 auto 10px;
-      transform: none;
-      z-index: 20;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-      pointer-events: none;
-    }
-
-    .recording-indicator-global.show { display: inline-flex; }
 
     .recording-dot {
       width: 7px;
@@ -574,7 +715,6 @@
     .control-button.report:hover:not(:disabled) {
       background: rgba(239, 68, 68, 0.1);
       border-color: rgba(239, 68, 68, 0.4);
-      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.18);
     }
 
     /* ---------------- MODALS ---------------- */
@@ -587,7 +727,7 @@
       justify-content: center;
       align-items: center;
       padding: 20px;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.78);
       backdrop-filter: blur(8px);
     }
 
@@ -620,21 +760,20 @@
     }
 
     .report-option:hover { background: rgba(255, 255, 255, 0.06); }
-
     .report-option input { accent-color: var(--accent-purple); }
 
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 
     .modal-button {
       height: 40px;
-      padding: 0 15px;
+      padding: 0 16px;
       border-radius: 10px;
       border: 1px solid var(--card-border);
       color: white;
       background: rgba(255, 255, 255, 0.05);
       font-family: inherit;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13.5px;
       cursor: pointer;
       transition: background 0.2s ease;
     }
@@ -647,30 +786,24 @@
       box-shadow: 0 4px 16px var(--accent-glow);
     }
 
-    /* ---------------- RECORDING RESULT MODAL ---------------- */
-
     .recording-result-modal {
       width: 100%;
-      max-width: 720px;
-      padding: 22px;
+      max-width: 680px;
+      padding: 24px;
       border-radius: 20px;
       background: #121526;
       border: 1px solid var(--card-border);
       box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
       max-height: 92vh;
       overflow-y: auto;
-      overscroll-behavior: contain;
     }
-
-    .recording-result-modal h2 { margin-bottom: 8px; font-size: 20px; }
-    .recording-result-modal p { margin-bottom: 16px; color: var(--text-muted); font-size: 14px; }
 
     .recording-preview {
       display: block;
       width: min(100%, 360px);
       height: auto;
-      max-height: 52vh;
-      margin: 0 auto;
+      max-height: 50vh;
+      margin: 12px auto;
       aspect-ratio: 9 / 16;
       border-radius: 14px;
       background: #080a12;
@@ -678,269 +811,93 @@
       object-fit: contain;
     }
 
-    .recording-local-note {
-      margin-top: 12px;
-      padding: 11px 12px;
-      border-radius: 11px;
-      background: rgba(74, 222, 128, 0.06);
-      border: 1px solid rgba(74, 222, 128, 0.14);
-      color: #cbd9d1;
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    /* ---------------- PLATFORM / FORMAT SELECTOR ---------------- */
-
-    .platform-title {
-      margin-top: 18px;
-      margin-bottom: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-      color: var(--text-main);
-    }
-
-    .platform-options {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
-    }
-
-    .platform-option {
-      position: relative;
-      min-width: 0;
-      min-height: 82px;
-      padding: 10px 6px;
-      border-radius: 12px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.035);
-      color: var(--text-main);
-      font-family: inherit;
-      font-size: 11px;
-      font-weight: 700;
-      line-height: 1.2;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      text-align: center;
-      transition:
-        transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-        background 0.18s ease,
-        border-color 0.18s ease,
-        box-shadow 0.18s ease;
-    }
-
-    .platform-option:hover {
-      background: rgba(255, 255, 255, 0.07);
-      transform: translateY(-2px);
-    }
-
-    .platform-option:active { transform: translateY(0) scale(0.97); }
-
-    .platform-option:focus-visible {
-      outline: 2px solid var(--accent-purple);
-      outline-offset: 2px;
-    }
-
-    .platform-option.selected {
-      background: rgba(124, 77, 255, 0.18);
-      border-color: rgba(124, 77, 255, 0.7);
-      box-shadow:
-        0 0 0 1px rgba(124, 77, 255, 0.14),
-        0 6px 18px rgba(124, 77, 255, 0.22);
-    }
-
-    .platform-option.selected::after {
-      content: '✓';
-      position: absolute;
-      top: 5px;
-      right: 6px;
-      width: 15px;
-      height: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background: var(--accent-purple);
-      color: #fff;
-      font-size: 9px;
-      font-weight: 800;
-      line-height: 1;
-    }
-
-    .platform-icon { font-size: 19px; line-height: 1; }
-
-    .platform-name {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
-    }
-
-    .platform-meta {
-      display: block;
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.4px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-    }
-
-    .platform-option.selected .platform-meta { color: #d6c9ff; }
-
-    .platform-format-note {
-      margin-top: 10px;
-      padding: 9px 11px;
-      border-radius: 10px;
-      background: rgba(124, 77, 255, 0.07);
-      border: 1px solid rgba(124, 77, 255, 0.16);
-      color: #cdc4e8;
-      font-size: 11.5px;
-      line-height: 1.45;
-      transition: opacity 0.18s ease;
-    }
-
-    .platform-format-note.flash { animation: noteFlash 0.35s ease; }
-
-    @keyframes noteFlash {
-      0% { opacity: 0.3; transform: translateY(3px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
-    .recording-result-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .modal-button.delete {
-      color: #fca5a5;
-      border-color: rgba(239, 68, 68, 0.28);
-    }
-
-    /* ---------------- BANNED MODAL ---------------- */
-    .banned-modal {
-      width: 100%;
-      max-width: 440px;
-      padding: 28px;
-      border-radius: 20px;
-      background: #180d14;
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      box-shadow: 0 30px 90px rgba(239, 68, 68, 0.3);
-      text-align: center;
-    }
-
-    .banned-icon { font-size: 48px; margin-bottom: 12px; }
-
-    .banned-modal h2 {
-      color: #ef4444;
-      font-size: 22px;
-      margin-bottom: 10px;
-    }
-
-    .banned-modal p {
-      color: #e5e7eb;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    /* ==========================================================================
-       RESPONSIVE
-       ========================================================================== */
-
-    @media (max-width: 680px) {
-      .top-bar {
-        padding: 0 12px;
-        height: 56px;
-        min-height: 56px;
-      }
-
-      .logo-img { height: 34px; }
-      .logo-text { font-size: 22px; }
-
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .top-bar { padding: 0 10px; height: 52px; min-height: 52px; }
       .status { display: none; }
-      .online-count { font-size: 12px; padding: 4px 10px; }
-
-      .main-container { padding: 8px; }
-
+      .main-container { padding: 6px; }
       .video-grid {
         grid-template-columns: 1fr;
-        grid-template-rows: minmax(0, 1fr) minmax(0, 1.25fr);
-        gap: 10px;
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1.2fr);
+        gap: 6px;
       }
-
-      .video-card { border-radius: 12px; }
-
-      .video-label {
+      .controls { min-height: 58px; padding: 6px 10px; gap: 6px; flex-wrap: wrap; }
+      .control-button { height: 38px; padding: 0 10px; font-size: 12px; flex: 1; min-width: 80px; }
+      
+      /* Responsive: Ads Card sits BELOW from both video layouts, above controls */
+      .sponsored-banner-container {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        right: auto;
+        top: auto;
+        width: 100%;
+        max-width: 100%;
+        margin-top: 4px;
+        margin-bottom: 2px;
+        flex-shrink: 0;
+        z-index: 15;
+        display: none;
+      }
+      .sponsored-banner-container.show {
+        display: flex;
+        justify-content: center;
+      }
+      .sponsored-banner-container .sponsored-card {
+        width: 100%;
+        max-width: 100%;
+        padding: 5px 10px;
+        gap: 8px;
+        border-radius: 10px;
+        background: rgba(13, 17, 34, 0.95);
+        border: 1px solid rgba(124, 77, 255, 0.35);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      }
+      .sponsored-media {
+        width: 46px;
+        height: 32px;
+        border-radius: 6px;
+      }
+      .sponsored-badge {
+        font-size: 8.5px;
+        padding: 2px 5px;
+      }
+      .sponsored-title {
+        font-size: 11.5px;
+      }
+      .sponsored-desc {
         font-size: 10px;
-        padding: 4px 8px;
-        top: 8px;
-        left: 8px;
       }
-
-      .placeholder-icon { width: 32px; height: 32px; }
-      .placeholder-icon svg { width: 26px; height: 26px; }
-      .placeholder-text { font-size: 12px; }
-      .radar-sweep { width: 60px; height: 60px; }
-
-      .chat-message { font-size: 11px; padding: 6px 8px; }
-      .chat-messages { max-height: 110px; }
-      .chat-input-row { padding: 4px; }
-      .chat-input { font-size: 12px; }
-      .send-button { height: 28px; padding: 0 10px; font-size: 11px; }
-
+      .sponsored-cta {
+        font-size: 10.5px;
+      }
+      .sponsored-close {
+        font-size: 14px;
+        padding: 2px 5px;
+      }
+      
+      /* Mobile chat panel & send button: high z-index, responsive and unobstructed */
       .chat-panel {
         bottom: 8px;
         left: 8px;
         right: 8px;
+        gap: 6px;
       }
-
-      .controls {
-        min-height: 64px;
-        padding: 10px 12px;
-        gap: 10px;
-        flex-wrap: wrap;
+      .chat-input-row {
+        min-height: 44px;
+        padding: 4px 6px;
+        z-index: 20;
       }
-
-      .control-group {
-        gap: 8px;
-        flex: 1;
-        justify-content: center;
+      .chat-input {
+        font-size: 16px; /* Prevents auto-zoom on mobile safari */
+        height: 36px;
       }
-
-      .control-button {
-        height: 40px;
-        padding: 0 14px;
-        font-size: 12px;
-        flex: 1;
-        min-width: 0;
+      .send-button {
+        height: 36px;
+        min-width: 64px;
+        font-size: 13px;
+        touch-action: manipulation;
       }
-
-      .recording-result-modal { padding: 16px; border-radius: 16px; }
-      .recording-indicator-global { margin-bottom: 8px; }
-      .recording-preview { width: 100%; max-height: 40vh; }
-
-      .platform-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-
-      .platform-option {
-        min-height: 72px;
-        font-size: 10.5px;
-      }
-
-      .recording-result-actions { justify-content: stretch; }
-      .recording-result-actions .modal-button { flex: 1 1 100%; }
-    }
-
-    @media (max-width: 380px) {
-      .logo-text { font-size: 18px; }
-      .control-button { padding: 0 10px; font-size: 11px; }
-      .platform-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -955,24 +912,24 @@
 
     <!-- HEADER -->
     <header class="top-bar">
-      <a href="#" class="logo">
+      <a href="/" class="logo">
         <div class="logo-image-wrapper">
-          <img src="svgbg.png" alt="LELA Logo" class="logo-img" onerror="this.style.display='none'" />
+          <img src="svgbg.png" alt="LELA Logo" class="logo-img" onerror="this.src='/svgbg.svg'" />
         </div>
         <span class="logo-text">ሌላ</span>
       </a>
 
       <div class="header-right">
+        <button id="swapLayoutBtn" class="swap-layout-btn" title="Swap Video Positions (Top / Bottom)" type="button" aria-label="Swap Video Positions">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+          <span class="swap-text">Flip</span>
+        </button>
+
         <div id="status" class="status">
           Click Start Camera to begin
         </div>
 
-        <div
-          id="onlineCount"
-          class="online-count"
-          aria-live="polite"
-          title="People currently connected"
-        >
+        <div id="onlineCount" class="online-count" aria-live="polite" title="People currently connected">
           <span class="online-dot"></span>
           <span id="onlineCountText">0 online</span>
         </div>
@@ -982,31 +939,24 @@
     <!-- MAIN VIEW -->
     <main class="main-container">
 
-      <!-- RECORDING STATUS: ABOVE THE VIDEO AREA, NEVER OVER THE VIDEO -->
-      <div id="recordingStatus" class="recording-indicator recording-indicator-global" aria-live="polite">
+      <!-- RECORDING STATUS -->
+      <div id="recordingStatus" class="recording-indicator" aria-live="polite">
         <span class="recording-dot"></span>
         <span>Recording <strong id="recordingTime">00:00</strong></span>
       </div>
 
-      <div class="video-grid">
+      <div class="video-grid" id="videoGrid">
 
         <!-- STRANGER CARD -->
-        <section class="video-card">
-          <video
-            id="remoteVideo"
-            autoplay
-            playsinline
-          ></video>
+        <section class="video-card" id="remoteVideoCard">
+          <video id="remoteVideo" autoplay playsinline></video>
 
           <div class="video-label">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             Stranger
           </div>
 
-          <div
-            id="remotePlaceholder"
-            class="video-placeholder"
-          >
+          <div id="remotePlaceholder" class="video-placeholder">
             <div class="placeholder-icon">
               <div class="radar-sweep"></div>
               <div class="radar-sweep delayed"></div>
@@ -1021,27 +971,18 @@
               Waiting for partner...
             </div>
           </div>
-
         </section>
 
         <!-- YOU CARD -->
-        <section class="video-card">
-          <video
-            id="localVideo"
-            autoplay
-            muted
-            playsinline
-          ></video>
+        <section class="video-card" id="localVideoCard">
+          <video id="localVideo" autoplay muted playsinline></video>
 
           <div class="video-label">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
             You
           </div>
 
-          <div
-            id="localPlaceholder"
-            class="video-placeholder"
-          >
+          <div id="localPlaceholder" class="video-placeholder">
             <div class="placeholder-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
             </div>
@@ -1052,100 +993,63 @@
 
           <!-- CHAT FLOATING OVER YOUR VIDEO -->
           <div class="chat-panel">
-
-            <div
-              id="chatMessages"
-              class="chat-messages"
-            ></div>
-
-            <form
-              id="chatForm"
-              class="chat-input-row"
-            >
-              <input
-                id="chatInput"
-                class="chat-input"
-                type="text"
-                maxlength="500"
-                autocomplete="off"
-                placeholder="Type a message..."
-              />
-
-              <button
-                id="sendChatButton"
-                class="send-button"
-                type="submit"
-              >
-                Send
-              </button>
+            <div id="chatMessages" class="chat-messages"></div>
+            <form id="chatForm" class="chat-input-row">
+              <input id="chatInput" class="chat-input" type="text" maxlength="500" autocomplete="off" placeholder="Type a message..." />
+              <button id="sendChatButton" class="send-button" type="submit">Send</button>
             </form>
-
           </div>
         </section>
 
       </div>
+
+      <!-- SPONSORED AD PLACEMENT (DYNAMICALLY MANAGED BY ADMIN) -->
+      <div id="sponsoredBannerContainer" class="sponsored-banner-container">
+        <div class="sponsored-card" id="sponsoredCard">
+          <span class="sponsored-badge">Sponsored</span>
+          <div id="sponsoredMediaSlot"></div>
+          <div class="sponsored-content">
+            <div class="sponsored-title" id="sponsoredTitle">Featured Announcement</div>
+            <div class="sponsored-desc" id="sponsoredDesc"></div>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="sponsored-cta" id="sponsoredCta">
+              Learn more ↗
+            </a>
+          </div>
+          <button class="sponsored-close" id="sponsoredCloseBtn" title="Dismiss ad">✕</button>
+        </div>
+      </div>
+
     </main>
 
     <!-- CONTROLS -->
     <footer class="controls">
-
       <div class="control-group">
-        <button
-          id="startButton"
-          class="control-button primary"
-          type="button"
-        >
+        <button id="startButton" class="control-button primary" type="button">
           🎥 Start Camera
         </button>
 
-        <button
-          id="stopButton"
-          class="control-button stop"
-          type="button"
-          disabled
-        >
+        <button id="stopButton" class="control-button stop" type="button" disabled>
           ⏹ Stop
         </button>
       </div>
 
       <div class="control-group">
-        <button
-          id="nextButton"
-          class="control-button primary"
-          type="button"
-          disabled
-        >
+        <button id="nextButton" class="control-button primary" type="button" disabled>
           ⏭ Next
         </button>
 
-        <button
-          id="recordButton"
-          class="control-button record"
-          type="button"
-          disabled
-        >
+        <button id="recordButton" class="control-button record" type="button" disabled>
           🔴 Record
         </button>
 
-        <button
-          id="chatToggleButton"
-          class="control-button"
-          type="button"
-          disabled
-        >
+        <button id="chatToggleButton" class="control-button" type="button" disabled>
           💬 Chat: ON
         </button>
 
-        <button
-          id="reportButton"
-          class="control-button report"
-          type="button"
-          disabled
-        >
+        <button id="reportButton" class="control-button report" type="button" disabled>
           🚩 Report
         </button>
       </div>
-
     </footer>
 
   </div>
@@ -1154,470 +1058,74 @@
   <div id="recordingResultBackdrop" class="modal-backdrop">
     <div class="recording-result-modal">
       <h2>Your encounter is ready 🎬</h2>
-
-      <p id="recordingResultText">
-        Your recording was created locally on this device.
-      </p>
-
-      <video
-        id="recordingPreview"
-        class="recording-preview"
-        controls
-        playsinline
-        preload="metadata"
-      ></video>
-
-      <div id="recordingLocalNote" class="recording-local-note">
-        🔒 <strong>Not uploaded.</strong>
-        The recording is only in this browser right now.
-        Pick a target format below — the export is prepared on this device.
-      </div>
-
-      <div id="platformTitle" class="platform-title">Where are you sharing this?</div>
-
-      <div
-        id="platformOptions"
-        class="platform-options"
-        role="radiogroup"
-        aria-labelledby="platformTitle"
-      >
-        <button
-          type="button"
-          class="platform-option selected"
-          data-platform="tiktok"
-          role="radio"
-          aria-checked="true"
-        >
-          <span class="platform-icon" aria-hidden="true">🎵</span>
-          <span class="platform-name">TikTok</span>
-          <span class="platform-meta">9:16 · 1080p</span>
-        </button>
-
-        <button
-          type="button"
-          class="platform-option"
-          data-platform="instagram"
-          role="radio"
-          aria-checked="false"
-        >
-          <span class="platform-icon" aria-hidden="true">📸</span>
-          <span class="platform-name">Reels</span>
-          <span class="platform-meta">9:16 · 1080p</span>
-        </button>
-
-        <button
-          type="button"
-          class="platform-option"
-          data-platform="shorts"
-          role="radio"
-          aria-checked="false"
-        >
-          <span class="platform-icon" aria-hidden="true">▶️</span>
-          <span class="platform-name">Shorts</span>
-          <span class="platform-meta">9:16 · 60s</span>
-        </button>
-
-        <button
-          type="button"
-          class="platform-option"
-          data-platform="youtube"
-          role="radio"
-          aria-checked="false"
-        >
-          <span class="platform-icon" aria-hidden="true">📺</span>
-          <span class="platform-name">YouTube</span>
-          <span class="platform-meta">16:9 · 1080p</span>
-        </button>
-
-        <button
-          type="button"
-          class="platform-option"
-          data-platform="original"
-          role="radio"
-          aria-checked="false"
-        >
-          <span class="platform-icon" aria-hidden="true">💾</span>
-          <span class="platform-name">Original</span>
-          <span class="platform-meta">As recorded</span>
-        </button>
-      </div>
-
-      <div id="platformFormatNote" class="platform-format-note" role="status" aria-live="polite">
-        Vertical 9:16 · 1080 × 1920 · caption-safe zones kept clear
-      </div>
-
-      <div class="recording-result-actions">
-        <button
-          id="downloadRecordingButton"
-          class="modal-button submit"
-          type="button"
-        >
-          ⬇ Save to device
-        </button>
-
-        <button
-          id="deleteRecordingButton"
-          class="modal-button delete"
-          type="button"
-        >
-          🗑 Delete recording
-        </button>
+      <p id="recordingResultText">Your recording was captured locally on this device.</p>
+      <video id="recordingPreview" class="recording-preview" controls playsinline preload="metadata"></video>
+      <div class="modal-actions">
+        <button id="downloadRecordingButton" class="modal-button submit" type="button">⬇ Save to device</button>
+        <button id="deleteRecordingButton" class="modal-button" type="button">🗑 Delete recording</button>
       </div>
     </div>
   </div>
 
   <!-- REPORT MODAL -->
-  <div
-    id="reportModalBackdrop"
-    class="modal-backdrop"
-  >
+  <div id="reportModalBackdrop" class="modal-backdrop">
     <div class="report-modal">
-
       <h2>Report this person</h2>
-
-      <p>
-        Please tell us why you are reporting this user.
-      </p>
+      <p>Please tell us why you are reporting this user.</p>
 
       <div class="report-options">
-
         <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Nudity / Sexual content"
-          />
+          <input type="radio" name="reportReason" value="Nudity / Sexual content" checked />
           <span>Nudity / Sexual content</span>
         </label>
-
         <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Harassment / Bullying"
-          />
+          <input type="radio" name="reportReason" value="Harassment / Bullying" />
           <span>Harassment / Bullying</span>
         </label>
-
         <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Hate / Abusive behavior"
-          />
+          <input type="radio" name="reportReason" value="Hate / Abusive behavior" />
           <span>Hate / Abusive behavior</span>
         </label>
-
         <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Spam / Advertising"
-          />
+          <input type="radio" name="reportReason" value="Spam / Advertising" />
           <span>Spam / Advertising</span>
         </label>
-
         <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Underage user"
-          />
-          <span>Underage user</span>
-        </label>
-
-        <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Other"
-          />
+          <input type="radio" name="reportReason" value="Other" />
           <span>Other</span>
         </label>
-
       </div>
 
       <div class="modal-actions">
-
-        <button
-          id="cancelReportButton"
-          class="modal-button"
-          type="button"
-        >
-          Cancel
-        </button>
-
-        <button
-          id="submitReportButton"
-          class="modal-button submit"
-          type="button"
-        >
-          Submit Report
-        </button>
-
+        <button id="cancelReportButton" class="modal-button" type="button">Cancel</button>
+        <button id="submitReportButton" class="modal-button submit" type="button">Submit Report</button>
       </div>
-
     </div>
   </div>
 
   <!-- BANNED MODAL -->
   <div id="bannedModalBackdrop" class="modal-backdrop">
-    <div class="banned-modal">
-      <div class="banned-icon">🚫</div>
-      <h2>Access Suspended</h2>
+    <div class="report-modal" style="text-align: center; border-color: rgba(239, 68, 68, 0.4);">
+      <div style="font-size: 48px; margin-bottom: 12px;">🚫</div>
+      <h2 style="color: #ef4444;">Access Suspended</h2>
       <p id="bannedReasonText">You have been suspended from using this service due to a violation of community guidelines.</p>
     </div>
   </div>
 
-  <!-- ==========================================================================
-       EXPORT FORMAT SELECTOR
-       --------------------------------------------------------------------------
-       Self-contained controller for the platform/format radio group.
-       It does NOT touch app.js's handlers — it only:
-         1. keeps the visual selection in sync,
-         2. updates the human-readable format note,
-         3. publishes the chosen profile on window.LELA / a DOM event,
-         4. mirrors the profile onto #downloadRecordingButton's data-* attributes
-            (in the capture phase, so app.js can read them when its click
-             handler runs).
-       ========================================================================== -->
-  <script>
-    (function () {
-      'use strict';
-
-      var PROFILES = {
-        tiktok: {
-          label: 'TikTok',
-          ratio: '9:16',
-          width: 1080,
-          height: 1920,
-          extension: 'mp4',
-          mimeType: 'video/mp4',
-          filenameSuffix: '-tiktok',
-          note: 'Vertical 9:16 · 1080 × 1920 · caption-safe zones kept clear'
-        },
-        instagram: {
-          label: 'Instagram Reels',
-          ratio: '9:16',
-          width: 1080,
-          height: 1920,
-          extension: 'mp4',
-          mimeType: 'video/mp4',
-          filenameSuffix: '-reels',
-          note: 'Vertical 9:16 · 1080 × 1920 · Reels-safe margins, up to 90s'
-        },
-        shorts: {
-          label: 'YouTube Shorts',
-          ratio: '9:16',
-          width: 1080,
-          height: 1920,
-          extension: 'mp4',
-          mimeType: 'video/mp4',
-          filenameSuffix: '-shorts',
-          note: 'Vertical 9:16 · 1080 × 1920 · trimmed to 60s max for Shorts'
-        },
-        youtube: {
-          label: 'YouTube',
-          ratio: '16:9',
-          width: 1920,
-          height: 1080,
-          extension: 'mp4',
-          mimeType: 'video/mp4',
-          filenameSuffix: '-youtube',
-          note: 'Landscape 16:9 · 1920 × 1080 · vertical source is centred over a soft blur fill'
-        },
-        original: {
-          label: 'Original',
-          ratio: 'as recorded',
-          width: null,
-          height: null,
-          extension: 'webm',
-          mimeType: 'video/webm',
-          filenameSuffix: '',
-          note: 'Untouched capture · original resolution and codec, no re-encoding'
-        }
-      };
-
-      var DEFAULT_PLATFORM = 'tiktok';
-
-      var container   = document.getElementById('platformOptions');
-      var noteEl      = document.getElementById('platformFormatNote');
-      var downloadBtn = document.getElementById('downloadRecordingButton');
-
-      if (!container) { return; }
-
-      var buttons = Array.prototype.slice.call(
-        container.querySelectorAll('.platform-option')
-      );
-
-      if (!buttons.length) { return; }
-
-      var current = DEFAULT_PLATFORM;
-
-      /* -------- publish the active profile everywhere -------- */
-
-      function publish(key) {
-        var profile = PROFILES[key] || PROFILES[DEFAULT_PLATFORM];
-
-        var payload = {
-          platform: key,
-          label: profile.label,
-          ratio: profile.ratio,
-          width: profile.width,
-          height: profile.height,
-          extension: profile.extension,
-          mimeType: profile.mimeType,
-          filenameSuffix: profile.filenameSuffix,
-          note: profile.note
-        };
-
-        window.LELA = window.LELA || {};
-        window.LELA.exportProfile = payload;
-        window.LELA.platform = key;
-
-        if (downloadBtn) {
-          downloadBtn.dataset.exportPlatform  = key;
-          downloadBtn.dataset.exportLabel     = profile.label;
-          downloadBtn.dataset.exportRatio     = profile.ratio;
-          downloadBtn.dataset.exportWidth     = profile.width  == null ? '' : String(profile.width);
-          downloadBtn.dataset.exportHeight    = profile.height == null ? '' : String(profile.height);
-          downloadBtn.dataset.exportExtension = profile.extension;
-          downloadBtn.dataset.exportMime      = profile.mimeType;
-          downloadBtn.dataset.exportSuffix    = profile.filenameSuffix;
-        }
-
-        try {
-          window.dispatchEvent(
-            new CustomEvent('lela:platform-change', { detail: payload })
-          );
-        } catch (err) {
-          /* CustomEvent unsupported — the global + data-* attrs still work */
-        }
-
-        return payload;
-      }
-
-      /* -------- update the note text with a small flash -------- */
-
-      function renderNote(key) {
-        if (!noteEl) { return; }
-        var profile = PROFILES[key] || PROFILES[DEFAULT_PLATFORM];
-        noteEl.textContent = profile.note;
-        noteEl.dataset.platform = key;
-
-        noteEl.classList.remove('flash');
-        /* force reflow so the animation can restart */
-        void noteEl.offsetWidth;
-        noteEl.classList.add('flash');
-      }
-
-      /* -------- selection -------- */
-
-      function select(key, options) {
-        options = options || {};
-
-        if (!PROFILES[key]) { key = DEFAULT_PLATFORM; }
-
-        current = key;
-
-        buttons.forEach(function (btn) {
-          var isOn = btn.dataset.platform === key;
-          btn.classList.toggle('selected', isOn);
-          btn.setAttribute('aria-checked', isOn ? 'true' : 'false');
-          btn.tabIndex = isOn ? 0 : -1;
-        });
-
-        renderNote(key);
-        publish(key);
-
-        if (options.focus) {
-          var active = buttons.filter(function (b) {
-            return b.dataset.platform === key;
-          })[0];
-          if (active) { active.focus(); }
-        }
-      }
-
-      /* -------- pointer interaction -------- */
-
-      container.addEventListener('click', function (event) {
-        var btn = event.target.closest
-          ? event.target.closest('.platform-option')
-          : null;
-
-        if (!btn || !container.contains(btn)) { return; }
-
-        select(btn.dataset.platform);
-      });
-
-      /* -------- keyboard interaction (radiogroup pattern) -------- */
-
-      container.addEventListener('keydown', function (event) {
-        var handledKeys = [
-          'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'
-        ];
-
-        if (handledKeys.indexOf(event.key) === -1) { return; }
-
-        var index = buttons.indexOf(document.activeElement);
-
-        if (index === -1) {
-          index = buttons.findIndex(function (b) {
-            return b.classList.contains('selected');
-          });
-          if (index === -1) { index = 0; }
-        }
-
-        var next = index;
-
-        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-          next = (index + 1) % buttons.length;
-        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-          next = (index - 1 + buttons.length) % buttons.length;
-        } else if (event.key === 'Home') {
-          next = 0;
-        } else if (event.key === 'End') {
-          next = buttons.length - 1;
-        }
-
-        event.preventDefault();
-        select(buttons[next].dataset.platform, { focus: true });
-      });
-
-      /* -------- safety net: re-publish right before a download --------
-         Capture phase guarantees this runs before any bubble-phase
-         handler app.js has attached to the same button.               */
-
-      if (downloadBtn) {
-        downloadBtn.addEventListener('click', function () {
-          publish(current);
-        }, true);
-      }
-
-      /* -------- public API -------- */
-
-      window.LELA = window.LELA || {};
-      window.LELA.getExportProfile = function () {
-        return window.LELA.exportProfile;
-      };
-      window.LELA.setExportPlatform = function (key) {
-        select(key);
-        return window.LELA.exportProfile;
-      };
-      window.LELA.resetExportPlatform = function () {
-        select(DEFAULT_PLATFORM);
-        return window.LELA.exportProfile;
-      };
-
-      /* -------- initial state -------- */
-
-      var initial = buttons.filter(function (b) {
-        return b.classList.contains('selected');
-      })[0];
-
-      select(initial ? initial.dataset.platform : DEFAULT_PLATFORM);
-    })();
-  </script>
+  <!-- WEBSITE UPDATE / MAINTENANCE LOCKOUT MODAL (ADMIN CONTROLLED) -->
+  <div id="maintenanceModalBackdrop" class="modal-backdrop" style="z-index: 99999; backdrop-filter: blur(20px); background: rgba(5, 7, 18, 0.94);">
+    <div class="report-modal" style="text-align: center; border-color: rgba(239, 68, 68, 0.55); max-width: 480px; box-shadow: 0 16px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(239, 68, 68, 0.2); padding: 32px 26px;">
+      <div style="font-size: 50px; margin-bottom: 14px;">🛠️</div>
+      <h2 id="maintenanceModalTitle" style="color: #f87171; font-size: 22px; font-weight: 800; margin-bottom: 10px;">Platform Update in Progress</h2>
+      <p id="maintenanceModalText" style="color: #cbd5e1; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+        An official website update is currently underway. Video matching, calling, and chat interactions are temporarily suspended by the administrator until this maintenance window concludes.
+      </p>
+      <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 12px 14px; font-size: 12.5px; color: #fca5a5; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <span>🔒</span>
+        <span>Site interaction is locked. This screen will unlock automatically once maintenance is deleted by admin.</span>
+      </div>
+    </div>
+  </div>
 
   <script src="/app.js"></script>
 </body>
