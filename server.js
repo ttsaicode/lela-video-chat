@@ -5,32 +5,37 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const WebSocket = require("ws");
-const formidable = require("formidable");
+const formidable = require("formidable"); // NEW: For handling file uploads
 
 const supabase = require("./lib/supabase");
 const redis = require("./lib/redis");
 
+// Railway provides PORT in production. Local development falls back to 3000.
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
 
 const publicDir = path.join(__dirname, "public");
 const adminDir = path.join(__dirname, "admin");
-const uploadsDir = path.join(__dirname, "uploads");
+const uploadsDir = path.join(__dirname, "uploads"); // NEW: Ad uploads directory
 
+// Ensure the uploads directory exists
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 
+// Admin auth credentials & active sessions
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const adminTokens = new Set();
 
-// In-memory ad store (persists per-server-process; swap to Supabase for long-term persistence)
+// In-memory storage for ads (Replace with Supabase for persistence across restarts)
 let ads = [];
 
 function getClientIp(req) {
   const forwarded = req.headers["x-forwarded-for"];
-  if (forwarded) return forwarded.split(",")[0].trim();
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
   return req.socket ? req.socket.remoteAddress : "unknown";
 }
 
@@ -63,20 +68,23 @@ function verifyAdminToken(req) {
 }
 
 // ==================================================
-// HTTP SERVER
+// HTTP SERVER & ADMIN API
 // ==================================================
 
 const server = http.createServer(async (req, res) => {
   let requestPath = req.url.split("?")[0];
 
+  // Helper for JSON responses
   const sendJson = (status, obj) => {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(obj));
   };
 
   // --------------------------------------------------
-  // ADMIN DASHBOARD PAGE
+  // ADMIN ROUTES
   // --------------------------------------------------
+
+  // Admin Dashboard page
   if (requestPath === "/admin" || requestPath === "/admin/") {
     const adminHtmlPath = path.join(adminDir, "index.html");
     fs.readFile(adminHtmlPath, (err, data) => {
@@ -90,9 +98,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // --------------------------------------------------
-  // ADMIN LOGIN
-  // --------------------------------------------------
+  // Admin Login
   if (requestPath === "/api/admin/login" && req.method === "POST") {
     try {
       const { username, password } = await parseJsonBody(req);
@@ -108,30 +114,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // --------------------------------------------------
-  // ADMIN LOGOUT
-  // --------------------------------------------------
-  if (requestPath === "/api/admin/logout" && req.method === "POST") {
-    if (verifyAdminToken(req)) {
-      const token = req.headers["authorization"].replace(/^Bearer\s+/i, "").trim();
-      adminTokens.delete(token);
-    }
-    return sendJson(200, { success: true });
-  }
-
-  // --------------------------------------------------
-  // ADMIN HEARTBEAT
-  // --------------------------------------------------
-  if (requestPath === "/api/admin/heartbeat" && req.method === "POST") {
-    if (!verifyAdminToken(req)) {
-      return sendJson(401, { error: "Session expired" });
-    }
-    return sendJson(200, { success: true, ts: Date.now() });
-  }
-
-  // --------------------------------------------------
-  // ADMIN API (AUTH GUARDED)
-  // --------------------------------------------------
+  // Admin API Auth Guard
   if (requestPath.startsWith("/api/admin/")) {
     if (!verifyAdminToken(req)) {
       return sendJson(401, { error: "Unauthorized. Admin authentication required." });
@@ -157,7 +140,7 @@ const server = http.createServer(async (req, res) => {
         activePairsCount: activePairs,
         totalReports: allReports.length,
         totalBans: allBans.length,
-        totalAds: ads.filter(a => a.active).length,
+        totalAds: ads.filter(a => a.active).length, // NEW: Live ads count
         redisConnected: redis.isRedisConfigured(),
         supabaseConnected: supabase.isSupabaseConfigured()
       });
@@ -243,7 +226,10 @@ const server = http.createServer(async (req, res) => {
       const { clientId } = await parseJsonBody(req);
       let targetClient = null;
       for (const client of connectedClients) {
-        if (client.id === Number(clientId)) { targetClient = client; break; }
+        if (client.id === Number(clientId)) {
+          targetClient = client;
+          break;
+        }
       }
 
       if (targetClient) {
@@ -275,17 +261,17 @@ const server = http.createServer(async (req, res) => {
 
     // ================== ADS MANAGEMENT ==================
 
-    // GET /api/admin/ads
+    // GET /api/admin/ads - List all ads
     if (requestPath === "/api/admin/ads" && req.method === "GET") {
       return sendJson(200, { ads });
     }
 
-    // POST /api/admin/ads  (multipart form-data)
+    // POST /api/admin/ads - Create a new ad (Handles FormData)
     if (requestPath === "/api/admin/ads" && req.method === "POST") {
       const form = new formidable.IncomingForm({
         uploadDir: uploadsDir,
         keepExtensions: true,
-        maxFileSize: 25 * 1024 * 1024
+        maxFileSize: 25 * 1024 * 1024 // 25MB limit
       });
 
       form.parse(req, (err, fields, files) => {
@@ -294,17 +280,19 @@ const server = http.createServer(async (req, res) => {
           return sendJson(500, { error: "File upload failed or too large" });
         }
 
+        // Formidable v3 returns arrays for fields, so we grab the first item
         const getField = (val) => Array.isArray(val) ? val[0] : val;
-
+        
         const title = getField(fields.title) || "Untitled";
         const link_url = getField(fields.link_url) || "";
         const placement = getField(fields.placement) || "corner";
         const rotation_seconds = parseInt(getField(fields.rotation_seconds)) || 12;
         const active = getField(fields.active) === "true";
-
+        
         let mediaUrl = getField(fields.media_url) || "";
         let mediaType = "image";
 
+        // If a file was uploaded, generate its public URL
         if (files.media && files.media.length > 0) {
           const file = files.media[0];
           mediaUrl = `/uploads/${path.basename(file.filepath)}`;
@@ -333,10 +321,10 @@ const server = http.createServer(async (req, res) => {
         supabase.logAction("AD_CREATED", { title, mediaUrl });
         return sendJson(200, { success: true, ad: newAd });
       });
-      return;
+      return; // Important: return here because form.parse is async
     }
 
-    // PUT /api/admin/ads/:id/status
+    // PUT /api/admin/ads/:id/status - Toggle Ad Status
     const adStatusMatch = requestPath.match(/^\/api\/admin\/ads\/([^/]+)\/status$/);
     if (adStatusMatch && req.method === "PUT") {
       const adId = adStatusMatch[1];
@@ -347,19 +335,19 @@ const server = http.createServer(async (req, res) => {
       return sendJson(200, { success: true, ad });
     }
 
-    // DELETE /api/admin/ads/:id
+    // DELETE /api/admin/ads/:id - Delete an Ad
     const adDeleteMatch = requestPath.match(/^\/api\/admin\/ads\/([^/]+)$/);
     if (adDeleteMatch && req.method === "DELETE") {
       const adId = adDeleteMatch[1];
       const index = ads.findIndex(a => a.id === adId);
       if (index === -1) return sendJson(404, { error: "Ad not found" });
-
+      
       const ad = ads[index];
-      if (ad.media_url.startsWith("/uploads/")) {
+      if (ad.media_url.startsWith('/uploads/')) {
         const filePath = path.join(__dirname, ad.media_url);
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       }
-
+      
       ads.splice(index, 1);
       return sendJson(200, { success: true });
     }
@@ -371,16 +359,19 @@ const server = http.createServer(async (req, res) => {
   // PUBLIC ROUTES
   // --------------------------------------------------
 
-  // GET /api/ads  → returns the currently active ad (or null)
+  // PUBLIC: Get Active Ad for Video Chat Frontend
   if (requestPath === "/api/ads" && req.method === "GET") {
     const activeAd = ads.find(a => a.active);
     return sendJson(200, { ad: activeAd || null });
   }
 
   // --------------------------------------------------
-  // STATIC FILES
+  // PUBLIC STATIC FILE SERVING
   // --------------------------------------------------
-  if (requestPath === "/") requestPath = "/index.html";
+
+  if (requestPath === "/") {
+    requestPath = "/index.html";
+  }
 
   try {
     requestPath = decodeURIComponent(requestPath);
@@ -389,7 +380,7 @@ const server = http.createServer(async (req, res) => {
     return res.end("Bad request");
   }
 
-  // Serve uploaded ads
+  // Serve uploaded ad files
   if (requestPath.startsWith("/uploads/")) {
     const uploadPath = path.join(__dirname, requestPath);
     fs.readFile(uploadPath, (err, data) => {
@@ -398,21 +389,16 @@ const server = http.createServer(async (req, res) => {
         return res.end("Not found");
       }
       const ext = path.extname(uploadPath).toLowerCase();
-      const types = {
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".gif": "image/gif",
-        ".webp": "image/webp",
-        ".avif": "image/avif",
-        ".mp4": "video/mp4",
-        ".webm": "video/webm",
-        ".ogg": "video/ogg"
+      const types = { 
+        ".png": "image/png", 
+        ".jpg": "image/jpeg", 
+        ".jpeg": "image/jpeg", 
+        ".gif": "image/gif", 
+        ".webp": "image/webp", 
+        ".mp4": "video/mp4", 
+        ".webm": "video/webm" 
       };
-      res.writeHead(200, {
-        "Content-Type": types[ext] || "application/octet-stream",
-        "Cache-Control": "public, max-age=3600"
-      });
+      res.writeHead(200, { "Content-Type": types[ext] || "application/octet-stream" });
       res.end(data);
     });
     return;
@@ -420,6 +406,7 @@ const server = http.createServer(async (req, res) => {
 
   const filePath = path.resolve(publicDir, "." + requestPath);
 
+  // Prevent directory traversal outside the public folder
   if (filePath !== publicDir && !filePath.startsWith(publicDir + path.sep)) {
     res.writeHead(403);
     return res.end("Forbidden");
@@ -449,9 +436,11 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
+
 // ==================================================
-// WEBSOCKET SIGNALING
+// WEBSOCKET SIGNALING SERVER
 // ==================================================
+
 const wss = new WebSocket.Server({ server });
 
 let nextClientId = 1;
@@ -465,9 +454,14 @@ function broadcastOnlineCount() {
     else uniqueIps.add(client.id);
   }
 
-  const message = { type: "online-count", count: uniqueIps.size };
+  const message = {
+    type: "online-count",
+    count: uniqueIps.size
+  };
 
-  for (const client of connectedClients) send(client, message);
+  for (const client of connectedClients) {
+    send(client, message);
+  }
 }
 
 function send(socket, message) {
@@ -478,16 +472,21 @@ function send(socket, message) {
 
 function removeFromWaiting(socket) {
   const index = waitingClients.indexOf(socket);
-  if (index !== -1) waitingClients.splice(index, 1);
+  if (index !== -1) {
+    waitingClients.splice(index, 1);
+  }
 }
 
 function putInWaitingQueue(socket) {
-  if (!socket || socket.readyState !== WebSocket.OPEN || socket.peer) return;
+  if (!socket || socket.readyState !== WebSocket.OPEN || socket.peer) {
+    return;
+  }
 
   if (!waitingClients.includes(socket)) {
     waitingClients.push(socket);
     console.log(`[SERVER] Client ${socket.id} is waiting.`);
   }
+
   send(socket, { type: "waiting" });
 }
 
@@ -509,12 +508,15 @@ function tryMatchUsers() {
     clientA.peer = clientB;
     clientB.peer = clientA;
 
+    console.log("");
     console.log("========================================");
     console.log(`[MATCH] Client ${clientA.id} matched with Client ${clientB.id}`);
     console.log("========================================");
+    console.log("");
 
     send(clientA, { type: "matched", role: "caller" });
     send(clientB, { type: "matched", role: "callee" });
+
     send(clientA, { type: "create-offer" });
   }
 }
@@ -526,7 +528,9 @@ wss.on("connection", async (socket, request) => {
   if (banned) {
     console.log(`[SERVER] Rejected connection from banned IP: ${clientIp}`);
     send(socket, { type: "banned", reason: "Access suspended due to community guidelines violation." });
-    setTimeout(() => { try { socket.close(); } catch (e) {} }, 200);
+    setTimeout(() => {
+      try { socket.close(); } catch (e) {}
+    }, 200);
     return;
   }
 
@@ -581,7 +585,9 @@ wss.on("connection", async (socket, request) => {
       if (oldPeer) {
         oldPeer.peer = null;
         send(oldPeer, { type: "peer-disconnected" });
-        if (oldPeer.ready) putInWaitingQueue(oldPeer);
+        if (oldPeer.ready) {
+          putInWaitingQueue(oldPeer);
+        }
       }
 
       removeFromWaiting(socket);
@@ -608,6 +614,7 @@ wss.on("connection", async (socket, request) => {
       console.log(`[REPORT] Client ${socket.id} reported ${reportData.reportedId}: ${reportData.reason}`);
       await supabase.saveReport(reportData);
       redis.publishEvent("reports:new", reportData);
+
       send(socket, { type: "report-received" });
       return;
     }
@@ -656,8 +663,9 @@ wss.on("connection", async (socket, request) => {
 });
 
 // ==================================================
-// START
+// START SERVER
 // ==================================================
+
 server.listen(PORT, HOST, () => {
   console.log("");
   console.log("========================================");
