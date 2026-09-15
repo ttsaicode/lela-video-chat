@@ -2,1623 +2,1294 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ሌላ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LELA — Admin Control Center</title>
+  <link rel="shortcut icon" href="svgbg.png" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="shortcut icon" href="svgbg.png" type="image/x-icon">
 
   <style>
     :root {
       --bg-dark: #080a12;
-      --card-bg: rgba(18, 22, 41, 0.7);
+      --card-bg: rgba(18, 22, 41, 0.75);
       --card-border: rgba(255, 255, 255, 0.08);
       --accent-purple: #7c4dff;
       --accent-purple-hover: #9166ff;
-      --accent-glow: rgba(124, 77, 255, 0.4);
+      --accent-glow: rgba(124, 77, 255, 0.35);
       --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+      --warning: #f59e0b;
       --text-main: #f3f4f6;
       --text-muted: #9ca3af;
-      --glass-bg: rgba(12, 16, 32, 0.75);
+      --glass-bg: rgba(12, 16, 32, 0.85);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      -webkit-tap-highlight-color: transparent;
+      font-family: 'Inter', -apple-system, sans-serif;
     }
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: radial-gradient(circle at 15% 20%, #151838 0%, transparent 45%),
-                  radial-gradient(circle at 85% 80%, #21123d 0%, transparent 45%),
+    body {
+      background: radial-gradient(circle at 10% 20%, #151838 0%, transparent 40%),
+                  radial-gradient(circle at 90% 80%, #21123d 0%, transparent 40%),
                   var(--bg-dark);
       color: var(--text-main);
-      overflow: hidden;
-    }
-
-    .app {
-      width: 100vw;
-      height: 100vh;
-      height: 100dvh;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
-    /* ---------------- SYSTEM BROADCAST BANNER ---------------- */
-    .system-broadcast-banner {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 8px 16px;
-      background: linear-gradient(90deg, #7c4dff, #ec4899);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      z-index: 100;
-      animation: slideDown 0.3s ease;
-    }
+    .muted { color: var(--text-muted); }
+    .danger-text { color: #fca5a5; }
 
-    .system-broadcast-banner.show {
-      display: flex;
-    }
-
-    @keyframes slideDown {
-      from { transform: translateY(-100%); }
-      to { transform: translateY(0); }
-    }
-
-    /* ---------------- HEADER ---------------- */
-
-    .top-bar {
-      height: 64px;
-      min-height: 64px;
+    header {
+      height: 70px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
-      background: rgba(8, 10, 18, 0.85);
+      padding: 0 32px;
+      background: rgba(8, 10, 18, 0.9);
       border-bottom: 1px solid var(--card-border);
       backdrop-filter: blur(16px);
-      z-index: 30;
+      position: sticky;
+      top: 0;
+      z-index: 50;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-    }
+    .brand { display: flex; align-items: center; gap: 12px; }
 
-    .logo-image-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      mix-blend-mode: screen;
-    }
-
-    .logo-img {
-      height: 42px;
-      width: auto;
-      display: block;
-      filter: contrast(1.08) brightness(1.05);
-    }
-
-    .logo-text {
-      font-size: 26px;
+    .brand-title {
+      font-size: 22px;
       font-weight: 800;
-      letter-spacing: 0.5px;
       background: linear-gradient(135deg, #00e5ff 0%, #7c4dff 50%, #ff55ff 100%);
       -webkit-background-clip: text;
-      background-clip: text;
       -webkit-text-fill-color: transparent;
-      line-height: 1;
     }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .admin-badge {
+      background: rgba(124, 77, 255, 0.2);
+      border: 1px solid rgba(124, 77, 255, 0.4);
+      color: #c4b5fd;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .status {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-muted);
-      background: rgba(255, 255, 255, 0.04);
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      white-space: nowrap;
-    }
+    .header-actions { display: flex; align-items: center; gap: 16px; }
 
-    .online-count {
+    .status-pill {
       display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.03);
-      font-size: 13px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .online-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
-
-    /* ---------------- MAIN LAYOUT ---------------- */
-
-    .main-container {
-      flex: 1;
-      padding: 16px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    .video-grid {
-      width: 100%;
-      flex: 1;
-      min-height: 0;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr;
-      gap: 16px;
-      position: relative;
-    }
-
-    .video-card {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background: var(--card-bg);
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid var(--card-border);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      background: #0c0e1a;
-    }
-
-    #localVideo { transform: scaleX(-1); }
-    #remoteVideo { transform: none; }
-
-    .video-label {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      z-index: 5;
-      padding: 6px 12px;
-      border-radius: 10px;
-      background: var(--glass-bg);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 12px;
-      font-weight: 600;
-      backdrop-filter: blur(8px);
-      display: flex;
       align-items: center;
       gap: 6px;
-    }
-
-    /* ---------------- PLACEHOLDERS ---------------- */
-
-    .video-placeholder {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      gap: 14px;
-      color: var(--text-muted);
-      background: radial-gradient(circle at center, rgba(124, 77, 255, 0.08), transparent 60%), #0c0e1a;
-      pointer-events: none;
-      text-align: center;
-      padding: 16px;
-    }
-
-    .placeholder-icon {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 52px;
-      height: 52px;
-      color: #9ca3af;
-    }
-
-    .placeholder-icon svg {
-      width: 44px;
-      height: 44px;
-      filter: drop-shadow(0 0 8px rgba(124, 77, 255, 0.3));
-    }
-
-    .radar-sweep {
-      position: absolute;
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      border: 2px solid var(--accent-purple);
-      opacity: 0;
-      animation: radar 2s infinite ease-out;
-      pointer-events: none;
-    }
-
-    @keyframes radar {
-      0% { transform: scale(0.3); opacity: 0.8; }
-      100% { transform: scale(1.8); opacity: 0; }
-    }
-
-    .radar-sweep.delayed { animation-delay: 1s; }
-
-    .placeholder-text {
-      font-size: 15px;
-      color: #8b90a0;
-    }
-
-    /* ---------------- IN-VIDEO CHAT OVERLAY ---------------- */
-
-    .chat-panel {
-      position: absolute;
-      bottom: 12px;
-      left: 12px;
-      right: 12px;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 55%;
-      pointer-events: none;
-    }
-
-    .chat-panel * { pointer-events: auto; }
-
-    .chat-panel.chat-off .chat-messages {
-      opacity: 0.35;
-      filter: grayscale(0.5);
-    }
-
-    .chat-panel.chat-off .chat-input-row {
-      opacity: 0.45;
-      pointer-events: none;
-    }
-
-    .chat-panel.chat-off .chat-input { cursor: not-allowed; }
-
-    .chat-panel.chat-off .chat-input::placeholder {
-      color: rgba(255, 255, 255, 0.35);
-      font-style: italic;
-    }
-
-    .chat-messages {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      max-height: 180px;
-      padding: 12px 4px 2px 4px;
-      scroll-behavior: smooth;
-      overscroll-behavior: contain;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
-      mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
-    }
-
-    .chat-messages::-webkit-scrollbar { display: none; }
-
-    .chat-message {
-      width: fit-content;
-      max-width: 85%;
-      padding: 8px 12px;
-      border-radius: 12px;
-      font-size: 13px;
-      line-height: 1.4;
-      word-break: break-word;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    @keyframes slideUpFade {
-      0% { opacity: 0; transform: translateY(12px) scale(0.95); }
-      100% { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    .chat-message.mine {
-      align-self: flex-end;
-      background: rgba(124, 77, 255, 0.85);
-      color: #ffffff;
-      border-bottom-right-radius: 2px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .chat-message.theirs {
-      align-self: flex-start;
-      background: rgba(18, 22, 41, 0.85);
-      color: var(--text-main);
-      border-bottom-left-radius: 2px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-    }
-
-    .chat-input-row {
-      display: flex;
-      gap: 8px;
-      background: rgba(10, 14, 28, 0.85);
-      padding: 6px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-
-    .chat-input {
-      flex: 1;
-      min-width: 0;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: white;
-      font-family: inherit;
-      font-size: 13px;
-      padding: 0 8px;
-    }
-
-    .chat-input::placeholder { color: rgba(255, 255, 255, 0.4); }
-
-    .send-button {
-      height: 34px;
-      padding: 0 14px;
-      border: none;
-      border-radius: 8px;
-      background: var(--accent-purple);
-      color: white;
-      font-family: inherit;
+      padding: 5px 12px;
+      border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    .send-button:hover { background: var(--accent-purple-hover); }
-
-    /* ---------------- CONTROL BAR ---------------- */
-
-    .controls {
-      min-height: 76px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 28px;
-      padding: 12px 24px;
-      background: rgba(8, 10, 18, 0.9);
-      border-top: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      z-index: 30;
-    }
-
-    .control-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .control-button {
-      height: 46px;
-      padding: 0 20px;
-      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
-      font-family: inherit;
-      font-size: 14px;
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.green { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    .dot.amber { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+    .dot.red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+    .btn {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 9px;
       font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 9px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition:
-        transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-        background 0.18s ease,
-        box-shadow 0.18s ease,
-        border-color 0.18s ease;
-    }
-
-    .control-button:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.1);
-      transform: translateY(-2px);
-      border-color: rgba(255, 255, 255, 0.18);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-    }
-
-    .control-button:active:not(:disabled) {
-      transform: translateY(0) scale(0.97);
-    }
-
-    .control-button:disabled {
-      opacity: 0.38;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .control-button.primary {
-      background: linear-gradient(135deg, var(--accent-purple) 0%, #6366f1 100%);
-      border: none;
-      color: white;
-      box-shadow: 0 4px 18px var(--accent-glow);
-    }
-
-    .control-button.primary:hover:not(:disabled) {
-      box-shadow: 0 6px 26px rgba(124, 77, 255, 0.55);
-      background: linear-gradient(135deg, var(--accent-purple-hover) 0%, #7180ff 100%);
-    }
-
-    .control-button.stop {
-      background: rgba(239, 68, 68, 0.15);
-      border-color: rgba(239, 68, 68, 0.3);
-      color: #fca5a5;
-    }
-
-    .control-button.stop:hover:not(:disabled) {
-      background: rgba(239, 68, 68, 0.28);
-      border-color: rgba(239, 68, 68, 0.5);
-      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.25);
-    }
-
-    .control-button.record {
-      background: rgba(239, 68, 68, 0.12);
-      border-color: rgba(239, 68, 68, 0.32);
-      color: #fca5a5;
-    }
-
-    .control-button.record:hover:not(:disabled) {
-      background: rgba(239, 68, 68, 0.24);
-      border-color: rgba(239, 68, 68, 0.5);
-      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.2);
-    }
-
-    .control-button.record.recording {
-      background: rgba(239, 68, 68, 0.24);
-      border-color: rgba(239, 68, 68, 0.65);
-      color: #fecaca;
-    }
-
-    .recording-indicator {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 8;
-      display: none;
-      align-items: center;
-      gap: 7px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(20, 8, 12, 0.82);
-      border: 1px solid rgba(239, 68, 68, 0.45);
-      color: #fecaca;
-      font-size: 11px;
-      font-weight: 700;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    .recording-indicator.show { display: inline-flex; }
-
-    .recording-indicator-global {
-      position: static;
-      align-self: center;
-      width: max-content;
-      margin: 0 auto 10px;
-      transform: none;
-      z-index: 20;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-      pointer-events: none;
-    }
-
-    .recording-indicator-global.show { display: inline-flex; }
-
-    .recording-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #ef4444;
-      box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
-      animation: recordingPulse 1s ease-in-out infinite;
-    }
-
-    @keyframes recordingPulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.35; }
-    }
-
-    .control-button.report {
-      background: transparent;
-      border-color: rgba(239, 68, 68, 0.2);
-      color: #ef4444;
-    }
-
-    .control-button.report:hover:not(:disabled) {
-      background: rgba(239, 68, 68, 0.1);
-      border-color: rgba(239, 68, 68, 0.4);
-      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.18);
-    }
-
-    /* ---------------- MODALS ---------------- */
-
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-    }
-
-    .modal-backdrop.show { display: flex; }
-
-    .report-modal {
-      width: 100%;
-      max-width: 420px;
-      padding: 24px;
-      border-radius: 20px;
-      background: #121526;
-      border: 1px solid var(--card-border);
-      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
-    }
-
-    .report-modal h2 { margin-bottom: 8px; font-size: 20px; }
-    .report-modal p { margin-bottom: 18px; color: var(--text-muted); font-size: 14px; }
-    .report-options { display: flex; flex-direction: column; gap: 10px; }
-
-    .report-option {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--card-border);
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .report-option:hover { background: rgba(255, 255, 255, 0.06); }
-
-    .report-option input { accent-color: var(--accent-purple); }
-
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
-
-    .modal-button {
-      height: 40px;
-      padding: 0 15px;
-      border-radius: 10px;
-      border: 1px solid var(--card-border);
-      color: white;
-      background: rgba(255, 255, 255, 0.05);
-      font-family: inherit;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    .modal-button:hover { background: rgba(255, 255, 255, 0.1); }
-
-    .modal-button.submit {
-      background: linear-gradient(135deg, var(--accent-purple) 0%, #6366f1 100%);
-      border: none;
-      box-shadow: 0 4px 16px var(--accent-glow);
-    }
-
-    /* ---------------- RECORDING RESULT MODAL ---------------- */
-
-    .recording-result-modal {
-      width: 100%;
-      max-width: 720px;
-      padding: 22px;
-      border-radius: 20px;
-      background: #121526;
-      border: 1px solid var(--card-border);
-      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
-      max-height: 92vh;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-    }
-
-    .recording-result-modal h2 { margin-bottom: 8px; font-size: 20px; }
-    .recording-result-modal p { margin-bottom: 16px; color: var(--text-muted); font-size: 14px; }
-
-    .recording-preview {
-      display: block;
-      width: min(100%, 360px);
-      height: auto;
-      max-height: 52vh;
-      margin: 0 auto;
-      aspect-ratio: 9 / 16;
-      border-radius: 14px;
-      background: #080a12;
-      border: 1px solid var(--card-border);
-      object-fit: contain;
-    }
-
-    .recording-local-note {
-      margin-top: 12px;
-      padding: 11px 12px;
-      border-radius: 11px;
-      background: rgba(74, 222, 128, 0.06);
-      border: 1px solid rgba(74, 222, 128, 0.14);
-      color: #cbd9d1;
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    /* ---------------- PLATFORM / FORMAT SELECTOR ---------------- */
-
-    .platform-title {
-      margin-top: 18px;
-      margin-bottom: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-      color: var(--text-main);
-    }
-
-    .platform-options {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      transition: all 0.2s ease;
+      white-space: nowrap;
     }
 
-    .platform-option {
-      position: relative;
-      min-width: 0;
-      min-height: 82px;
-      padding: 10px 6px;
-      border-radius: 12px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.035);
-      color: var(--text-main);
-      font-family: inherit;
-      font-size: 11px;
-      font-weight: 700;
-      line-height: 1.2;
-      cursor: pointer;
+    .btn:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-purple) 0%, #6366f1 100%);
+      border: none;
+      color: white;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, var(--accent-purple-hover) 0%, #7180ff 100%); }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+    }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.3); }
+
+    .btn-sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 6px; }
+
+    .container {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      text-align: center;
-      transition:
-        transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-        background 0.18s ease,
-        border-color 0.18s ease,
-        box-shadow 0.18s ease;
+      gap: 24px;
     }
 
-    .platform-option:hover {
-      background: rgba(255, 255, 255, 0.07);
-      transform: translateY(-2px);
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
     }
 
-    .platform-option:active { transform: translateY(0) scale(0.97); }
-
-    .platform-option:focus-visible {
-      outline: 2px solid var(--accent-purple);
-      outline-offset: 2px;
-    }
-
-    .platform-option.selected {
-      background: rgba(124, 77, 255, 0.18);
-      border-color: rgba(124, 77, 255, 0.7);
-      box-shadow:
-        0 0 0 1px rgba(124, 77, 255, 0.14),
-        0 6px 18px rgba(124, 77, 255, 0.22);
-    }
-
-    .platform-option.selected::after {
-      content: '✓';
-      position: absolute;
-      top: 5px;
-      right: 6px;
-      width: 15px;
-      height: 15px;
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 18px 20px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background: var(--accent-purple);
-      color: #fff;
-      font-size: 9px;
-      font-weight: 800;
-      line-height: 1;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     }
 
-    .platform-icon { font-size: 19px; line-height: 1; }
+    .stat-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    .stat-value { font-size: 28px; font-weight: 800; color: #fff; }
+    .stat-sub { font-size: 12px; color: var(--text-muted); }
 
-    .platform-name {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
-    }
-
-    .platform-meta {
-      display: block;
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.4px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-    }
-
-    .platform-option.selected .platform-meta { color: #d6c9ff; }
-
-    .platform-format-note {
-      margin-top: 10px;
-      padding: 9px 11px;
-      border-radius: 10px;
-      background: rgba(124, 77, 255, 0.07);
-      border: 1px solid rgba(124, 77, 255, 0.16);
-      color: #cdc4e8;
-      font-size: 11.5px;
-      line-height: 1.45;
-      transition: opacity 0.18s ease;
-    }
-
-    .platform-format-note.flash { animation: noteFlash 0.35s ease; }
-
-    @keyframes noteFlash {
-      0% { opacity: 0.3; transform: translateY(3px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
-    .recording-result-actions {
+    .tabs {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
       gap: 10px;
-      margin-top: 16px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 12px;
+      flex-wrap: wrap;
     }
 
-    .modal-button.delete {
-      color: #fca5a5;
-      border-color: rgba(239, 68, 68, 0.28);
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    /* ---------------- BANNED MODAL ---------------- */
-    .banned-modal {
+    .tab-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.04); }
+
+    .tab-btn.active {
+      color: #fff;
+      background: rgba(124, 77, 255, 0.2);
+      border: 1px solid rgba(124, 77, 255, 0.4);
+    }
+
+    .panel {
+      display: none;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .panel.active { display: block; }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .panel-title { font-size: 18px; font-weight: 700; }
+
+    .panel-hint {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+    }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 16px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--card-border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    td.actions-cell { white-space: nowrap; }
+    td.actions-cell .btn { margin-right: 6px; }
+
+    .tag {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .tag-pending   { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .tag-reviewed  { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tag-banned    { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .tag-dismissed { background: rgba(156, 163, 175, 0.15); color: #9ca3af; border: 1px solid rgba(156, 163, 175, 0.3); }
+    .tag-live      { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tag-paused    { background: rgba(156, 163, 175, 0.15); color: #9ca3af; border: 1px solid rgba(156, 163, 175, 0.3); }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .input-field {
+      flex: 1;
+      min-width: 200px;
+      height: 42px;
+      background: rgba(10, 14, 28, 0.8);
+      border: 1px solid var(--card-border);
+      border-radius: 9px;
+      color: #fff;
+      padding: 0 14px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input-field:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 10px rgba(124, 77, 255, 0.3);
+    }
+
+    .input-field::placeholder { color: #5b6478; }
+
+    select.input-field {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      padding-right: 38px;
+      cursor: pointer;
+    }
+    select.input-field option { background: #121629; color: #f3f4f6; }
+
+    input[type="file"].input-field {
+      padding: 9px 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    input[type="file"].input-field::file-selector-button {
+      background: rgba(124, 77, 255, 0.25);
+      border: 1px solid rgba(124, 77, 255, 0.45);
+      color: #ddd6fe;
+      border-radius: 6px;
+      padding: 5px 12px;
+      margin-right: 12px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .checkbox-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+      height: 42px;
+      padding: 0 6px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .checkbox-row input { width: 16px; height: 16px; accent-color: var(--accent-purple); cursor: pointer; }
+
+    .ad-thumb {
+      width: 96px;
+      height: 54px;
+      object-fit: cover;
+      border-radius: 7px;
+      background: #0a0e1c;
+      border: 1px solid var(--card-border);
+      display: block;
+    }
+
+    .ad-thumb-placeholder {
+      width: 96px;
+      height: 54px;
+      border-radius: 7px;
+      background: #0a0e1c;
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    #adFilePreview { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+    #adFilePreview:empty { display: none; }
+
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 10, 18, 0.96);
+      backdrop-filter: blur(20px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-card {
       width: 100%;
-      max-width: 440px;
-      padding: 28px;
+      max-width: 400px;
+      background: #121629;
+      border: 1px solid var(--card-border);
       border-radius: 20px;
-      background: #180d14;
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      box-shadow: 0 30px 90px rgba(239, 68, 68, 0.3);
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
       text-align: center;
     }
 
-    .banned-icon { font-size: 48px; margin-bottom: 12px; }
+    .login-card h2 { font-size: 24px; margin-bottom: 8px; }
+    .login-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; line-height: 1.5; }
 
-    .banned-modal h2 {
-      color: #ef4444;
-      font-size: 22px;
-      margin-bottom: 10px;
+    .login-form { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
     }
 
-    .banned-modal p {
-      color: #e5e7eb;
-      font-size: 14px;
-      line-height: 1.6;
-    }
+    #loginError { font-size: 13px; display: none; line-height: 1.4; }
 
-    /* ==========================================================================
-       RESPONSIVE
-       ========================================================================== */
-
-    @media (max-width: 680px) {
-      .top-bar {
-        padding: 0 12px;
-        height: 56px;
-        min-height: 56px;
-      }
-
-      .logo-img { height: 34px; }
-      .logo-text { font-size: 22px; }
-
-      .status { display: none; }
-      .online-count { font-size: 12px; padding: 4px 10px; }
-
-      .main-container { padding: 8px; }
-
-      .video-grid {
-        grid-template-columns: 1fr;
-        grid-template-rows: minmax(0, 1fr) minmax(0, 1.25fr);
-        gap: 10px;
-      }
-
-      .video-card { border-radius: 12px; }
-
-      .video-label {
-        font-size: 10px;
-        padding: 4px 8px;
-        top: 8px;
-        left: 8px;
-      }
-
-      .placeholder-icon { width: 32px; height: 32px; }
-      .placeholder-icon svg { width: 26px; height: 26px; }
-      .placeholder-text { font-size: 12px; }
-      .radar-sweep { width: 60px; height: 60px; }
-
-      .chat-message { font-size: 11px; padding: 6px 8px; }
-      .chat-messages { max-height: 110px; }
-      .chat-input-row { padding: 4px; }
-      .chat-input { font-size: 12px; }
-      .send-button { height: 28px; padding: 0 10px; font-size: 11px; }
-
-      .chat-panel {
-        bottom: 8px;
-        left: 8px;
-        right: 8px;
-      }
-
-      .controls {
-        min-height: 64px;
-        padding: 10px 12px;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .control-group {
-        gap: 8px;
-        flex: 1;
-        justify-content: center;
-      }
-
-      .control-button {
-        height: 40px;
-        padding: 0 14px;
-        font-size: 12px;
-        flex: 1;
-        min-width: 0;
-      }
-
-      .recording-result-modal { padding: 16px; border-radius: 16px; }
-      .recording-indicator-global { margin-bottom: 8px; }
-      .recording-preview { width: 100%; max-height: 40vh; }
-
-      .platform-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-
-      .platform-option {
-        min-height: 72px;
-        font-size: 10.5px;
-      }
-
-      .recording-result-actions { justify-content: stretch; }
-      .recording-result-actions .modal-button { flex: 1 1 100%; }
-    }
-
-    @media (max-width: 380px) {
-      .logo-text { font-size: 18px; }
-      .control-button { padding: 0 10px; font-size: 11px; }
-      .platform-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 720px) {
+      header { padding: 0 16px; height: auto; flex-wrap: wrap; gap: 10px; padding-top: 12px; padding-bottom: 12px; }
+      .status-pill { display: none; }
+      .container { padding: 16px; }
     }
   </style>
 </head>
-
 <body>
-  <div class="app">
 
-    <!-- ADMIN BROADCAST BANNER -->
-    <div id="broadcastBanner" class="system-broadcast-banner">
-      <span id="broadcastMessage">System announcement</span>
+  <!-- LOGIN OVERLAY -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-card">
+      <div class="brand" style="justify-content: center; margin-bottom: 16px;">
+        <span class="brand-title">ሌላ</span>
+        <span class="admin-badge">Admin</span>
+      </div>
+      <h2>Moderation Portal</h2>
+      <p>Enter your administrator credentials to access the live monitoring and moderation console.</p>
+
+      <form id="loginForm" class="login-form" autocomplete="off" novalidate>
+        <div class="form-group">
+          <label for="adminUsername">Admin Username / Email</label>
+          <input type="text" id="adminUsername" name="lela-admin-user" class="input-field"
+                 style="width:100%" placeholder="admin" autocomplete="off"
+                 autocapitalize="off" autocorrect="off" spellcheck="false" required />
+        </div>
+        <div class="form-group">
+          <label for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" name="lela-admin-secret" class="input-field"
+                 style="width:100%" placeholder="••••••••" autocomplete="new-password" required />
+        </div>
+        <div id="loginError" role="alert"></div>
+        <button type="submit" class="btn btn-primary" style="height: 44px; margin-top: 8px;">
+          Authenticate
+        </button>
+      </form>
     </div>
-
-    <!-- HEADER -->
-    <header class="top-bar">
-      <a href="#" class="logo">
-        <div class="logo-image-wrapper">
-          <img src="svgbg.png" alt="LELA Logo" class="logo-img" onerror="this.style.display='none'" />
-        </div>
-        <span class="logo-text">ሌላ</span>
-      </a>
-
-      <div class="header-right">
-        <div id="status" class="status">
-          Click Start Camera to begin
-        </div>
-
-        <div
-          id="onlineCount"
-          class="online-count"
-          aria-live="polite"
-          title="People currently connected"
-        >
-          <span class="online-dot"></span>
-          <span id="onlineCountText">0 online</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- MAIN VIEW -->
-    <main class="main-container">
-
-      <!-- RECORDING STATUS: ABOVE THE VIDEO AREA, NEVER OVER THE VIDEO -->
-      <div id="recordingStatus" class="recording-indicator recording-indicator-global" aria-live="polite">
-        <span class="recording-dot"></span>
-        <span>Recording <strong id="recordingTime">00:00</strong></span>
-      </div>
-
-      <div class="video-grid">
-
-        <!-- STRANGER CARD -->
-        <section class="video-card">
-          <video
-            id="remoteVideo"
-            autoplay
-            playsinline
-          ></video>
-
-          <div class="video-label">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            Stranger
-          </div>
-
-          <div
-            id="remotePlaceholder"
-            class="video-placeholder"
-          >
-            <div class="placeholder-icon">
-              <div class="radar-sweep"></div>
-              <div class="radar-sweep delayed"></div>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-            </div>
-            <div class="placeholder-text">
-              Waiting for partner...
-            </div>
-          </div>
-
-        </section>
-
-        <!-- YOU CARD -->
-        <section class="video-card">
-          <video
-            id="localVideo"
-            autoplay
-            muted
-            playsinline
-          ></video>
-
-          <div class="video-label">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-            You
-          </div>
-
-          <div
-            id="localPlaceholder"
-            class="video-placeholder"
-          >
-            <div class="placeholder-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-            </div>
-            <div class="placeholder-text">
-              Camera Off
-            </div>
-          </div>
-
-          <!-- CHAT FLOATING OVER YOUR VIDEO -->
-          <div class="chat-panel">
-
-            <div
-              id="chatMessages"
-              class="chat-messages"
-            ></div>
-
-            <form
-              id="chatForm"
-              class="chat-input-row"
-            >
-              <input
-                id="chatInput"
-                class="chat-input"
-                type="text"
-                maxlength="500"
-                autocomplete="off"
-                placeholder="Type a message..."
-              />
-
-              <button
-                id="sendChatButton"
-                class="send-button"
-                type="submit"
-              >
-                Send
-              </button>
-            </form>
-
-          </div>
-        </section>
-
-      </div>
-    </main>
-
-    <!-- CONTROLS -->
-    <footer class="controls">
-
-      <div class="control-group">
-        <button
-          id="startButton"
-          class="control-button primary"
-          type="button"
-        >
-          🎥 Start Camera
-        </button>
-
-        <button
-          id="stopButton"
-          class="control-button stop"
-          type="button"
-          disabled
-        >
-          ⏹ Stop
-        </button>
-      </div>
-
-      <div class="control-group">
-        <button
-          id="nextButton"
-          class="control-button primary"
-          type="button"
-          disabled
-        >
-          ⏭ Next
-        </button>
-
-        <button
-          id="recordButton"
-          class="control-button record"
-          type="button"
-          disabled
-        >
-          🔴 Record
-        </button>
-
-        <button
-          id="chatToggleButton"
-          class="control-button"
-          type="button"
-          disabled
-        >
-          💬 Chat: ON
-        </button>
-
-        <button
-          id="reportButton"
-          class="control-button report"
-          type="button"
-          disabled
-        >
-          🚩 Report
-        </button>
-      </div>
-
-    </footer>
-
   </div>
 
-  <!-- RECORDING RESULT MODAL -->
-  <div id="recordingResultBackdrop" class="modal-backdrop">
-    <div class="recording-result-modal">
-      <h2>Your encounter is ready 🎬</h2>
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <a href="/" style="text-decoration:none" class="brand-title">ሌላ</a>
+      <span class="admin-badge">Admin Console</span>
+    </div>
 
-      <p id="recordingResultText">
-        Your recording was created locally on this device.
+    <div class="header-actions">
+      <div class="status-pill" id="redisStatus">
+        <span class="dot amber"></span> Redis: Checking...
+      </div>
+      <div class="status-pill" id="supabaseStatus">
+        <span class="dot amber"></span> Supabase: Checking...
+      </div>
+      <button class="btn btn-sm" onclick="fetchAdminData()">🔄 Refresh</button>
+      <button class="btn btn-sm btn-danger" onclick="logoutAdmin()">Logout</button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <div class="container">
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Online Clients</span>
+        <span class="stat-value" id="statOnline">0</span>
+        <span class="stat-sub">WebSocket connections</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Waiting Queue</span>
+        <span class="stat-value" id="statWaiting">0</span>
+        <span class="stat-sub">Waiting for strangers</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Active Pairs</span>
+        <span class="stat-value" id="statPairs">0</span>
+        <span class="stat-sub">Engaged in video chat</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">User Reports</span>
+        <span class="stat-value" id="statReports">0</span>
+        <span class="stat-sub">Total reports received</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Active Bans</span>
+        <span class="stat-value" id="statBans">0</span>
+        <span class="stat-sub">Blocked IP addresses</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Live Ads</span>
+        <span class="stat-value" id="statAds">0</span>
+        <span class="stat-sub">Published creatives</span>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabBar">
+      <button class="tab-btn active" data-panel="reportsPanel">🚩 Reports Queue (<span id="tabReportsCount">0</span>)</button>
+      <button class="tab-btn" data-panel="usersPanel">👥 Connected Clients (<span id="tabUsersCount">0</span>)</button>
+      <button class="tab-btn" data-panel="bansPanel">🚫 Banned IPs (<span id="tabBansCount">0</span>)</button>
+      <button class="tab-btn" data-panel="adsPanel">📣 Sponsored Ads (<span id="tabAdsCount">0</span>)</button>
+      <button class="tab-btn" data-panel="broadcastPanel">📢 Announcement Banner</button>
+    </div>
+
+    <!-- REPORTS -->
+    <div id="reportsPanel" class="panel active">
+      <div class="panel-header">
+        <h3 class="panel-title">User Violation Reports</h3>
+        <button class="btn btn-sm" onclick="fetchReports()">Refresh Reports</button>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Reported Client / IP</th>
+              <th>Reporter Client / IP</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="reportsTableBody">
+            <tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Sign in to view reports.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div id="usersPanel" class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Active Live Connections</h3>
+        <button class="btn btn-sm" onclick="fetchLiveConnections()">Refresh Connections</button>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Client ID</th>
+              <th>IP Address</th>
+              <th>Status</th>
+              <th>Matched Peer</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Sign in to view clients.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BANS -->
+    <div id="bansPanel" class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Blocked IP Addresses</h3>
+      </div>
+
+      <form id="quickBanForm" class="form-row" onsubmit="handleManualBan(event)">
+        <input type="text" id="banIpInput" class="input-field" placeholder="IP Address (e.g. 192.168.1.50)" required />
+        <input type="text" id="banReasonInput" class="input-field" placeholder="Reason (e.g. Harassment)" required />
+        <button type="submit" class="btn btn-danger">🚫 Block IP</button>
+      </form>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>IP Address</th>
+              <th>Reason</th>
+              <th>Banned By</th>
+              <th>Date Banned</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="bansTableBody">
+            <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Sign in to view bans.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADS -->
+    <div id="adsPanel" class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Sponsored Ads</h3>
+        <button class="btn btn-sm" onclick="fetchAds()">Refresh Ads</button>
+      </div>
+
+      <p class="panel-hint">
+        Upload an image or video (MP4/WebM, max 25 MB) or paste a hosted media URL.
+        Ads appear in a dismissible <strong>“Sponsored”</strong> card on the video chat page —
+        bottom-right floating card, in-flow card below the video, or top-right sidebar on desktop.
       </p>
 
-      <video
-        id="recordingPreview"
-        class="recording-preview"
-        controls
-        playsinline
-        preload="metadata"
-      ></video>
+      <form id="adForm" onsubmit="handleAdSubmit(event)">
+        <div class="form-row">
+          <input type="text" id="adTitle" class="input-field" placeholder="Ad title (internal label, optional)" maxlength="80" />
+          <input type="text" id="adLink" class="input-field" placeholder="Click-through URL — https://… (optional)" />
+        </div>
 
-      <div id="recordingLocalNote" class="recording-local-note">
-        🔒 <strong>Not uploaded.</strong>
-        The recording is only in this browser right now.
-        Pick a target format below — the export is prepared on this device.
-      </div>
+        <div class="form-row">
+          <input type="text" id="adMediaUrl" class="input-field" placeholder="Media URL (or upload a file below)" />
+          <select id="adPlacement" class="input-field">
+            <option value="corner">Floating corner card (least intrusive)</option>
+            <option value="below-video">Below video (in-flow, all devices)</option>
+            <option value="sidebar">Sidebar (desktop top-right)</option>
+          </select>
+        </div>
 
-      <div id="platformTitle" class="platform-title">Where are you sharing this?</div>
+        <div class="form-row">
+          <input type="file" id="adFile" class="input-field" accept="image/png,image/jpeg,image/webp,image/gif,image/avif,video/mp4,video/webm,video/ogg" />
+          <input type="number" id="adRotation" class="input-field" style="max-width:190px" min="3" max="120" value="12" placeholder="Rotation secs" />
+          <label class="checkbox-row" for="adActive">
+            <input type="checkbox" id="adActive" checked /> Publish immediately
+          </label>
+          <button type="submit" class="btn btn-primary" id="adSubmitBtn">Publish Ad</button>
+        </div>
+      </form>
 
-      <div
-        id="platformOptions"
-        class="platform-options"
-        role="radiogroup"
-        aria-labelledby="platformTitle"
-      >
-        <button
-          type="button"
-          class="platform-option selected"
-          data-platform="tiktok"
-          role="radio"
-          aria-checked="true"
-        >
-          <span class="platform-icon" aria-hidden="true">🎵</span>
-          <span class="platform-name">TikTok</span>
-          <span class="platform-meta">9:16 · 1080p</span>
-        </button>
+      <div id="adFilePreview"></div>
 
-        <button
-          type="button"
-          class="platform-option"
-          data-platform="instagram"
-          role="radio"
-          aria-checked="false"
-        >
-          <span class="platform-icon" aria-hidden="true">📸</span>
-          <span class="platform-name">Reels</span>
-          <span class="platform-meta">9:16 · 1080p</span>
-        </button>
-
-        <button
-          type="button"
-          class="platform-option"
-          data-platform="shorts"
-          role="radio"
-          aria-checked="false"
-        >
-          <span class="platform-icon" aria-hidden="true">▶️</span>
-          <span class="platform-name">Shorts</span>
-          <span class="platform-meta">9:16 · 60s</span>
-        </button>
-
-        <button
-          type="button"
-          class="platform-option"
-          data-platform="youtube"
-          role="radio"
-          aria-checked="false"
-        >
-          <span class="platform-icon" aria-hidden="true">📺</span>
-          <span class="platform-name">YouTube</span>
-          <span class="platform-meta">16:9 · 1080p</span>
-        </button>
-
-        <button
-          type="button"
-          class="platform-option"
-          data-platform="original"
-          role="radio"
-          aria-checked="false"
-        >
-          <span class="platform-icon" aria-hidden="true">💾</span>
-          <span class="platform-name">Original</span>
-          <span class="platform-meta">As recorded</span>
-        </button>
-      </div>
-
-      <div id="platformFormatNote" class="platform-format-note" role="status" aria-live="polite">
-        Vertical 9:16 · 1080 × 1920 · caption-safe zones kept clear
-      </div>
-
-      <div class="recording-result-actions">
-        <button
-          id="downloadRecordingButton"
-          class="modal-button submit"
-          type="button"
-        >
-          ⬇ Save to device
-        </button>
-
-        <button
-          id="deleteRecordingButton"
-          class="modal-button delete"
-          type="button"
-        >
-          🗑 Delete recording
-        </button>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Preview</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Placement</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adsTableBody">
+            <tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Sign in to manage ads.</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
 
-  <!-- REPORT MODAL -->
-  <div
-    id="reportModalBackdrop"
-    class="modal-backdrop"
-  >
-    <div class="report-modal">
-
-      <h2>Report this person</h2>
-
-      <p>
-        Please tell us why you are reporting this user.
+    <!-- BROADCAST -->
+    <div id="broadcastPanel" class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Send Broadcast Announcement</h3>
+      </div>
+      <p class="panel-hint">
+        Publish a real-time banner alert to all active users currently connected.
       </p>
 
-      <div class="report-options">
-
-        <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Nudity / Sexual content"
-          />
-          <span>Nudity / Sexual content</span>
-        </label>
-
-        <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Harassment / Bullying"
-          />
-          <span>Harassment / Bullying</span>
-        </label>
-
-        <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Hate / Abusive behavior"
-          />
-          <span>Hate / Abusive behavior</span>
-        </label>
-
-        <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Spam / Advertising"
-          />
-          <span>Spam / Advertising</span>
-        </label>
-
-        <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Underage user"
-          />
-          <span>Underage user</span>
-        </label>
-
-        <label class="report-option">
-          <input
-            type="radio"
-            name="reportReason"
-            value="Other"
-          />
-          <span>Other</span>
-        </label>
-
-      </div>
-
-      <div class="modal-actions">
-
-        <button
-          id="cancelReportButton"
-          class="modal-button"
-          type="button"
-        >
-          Cancel
-        </button>
-
-        <button
-          id="submitReportButton"
-          class="modal-button submit"
-          type="button"
-        >
-          Submit Report
-        </button>
-
-      </div>
-
+      <form onsubmit="handleSendBroadcast(event)">
+        <div class="form-row">
+          <input type="text" id="broadcastInput" class="input-field" placeholder="e.g. Server maintenance scheduled in 10 minutes..." maxlength="200" required />
+          <button type="submit" class="btn btn-primary">Publish Announcement</button>
+        </div>
+      </form>
     </div>
+
   </div>
 
-  <!-- BANNED MODAL -->
-  <div id="bannedModalBackdrop" class="modal-backdrop">
-    <div class="banned-modal">
-      <div class="banned-icon">🚫</div>
-      <h2>Access Suspended</h2>
-      <p id="bannedReasonText">You have been suspended from using this service due to a violation of community guidelines.</p>
-    </div>
-  </div>
-
-  <!-- ==========================================================================
-       EXPORT FORMAT SELECTOR
-       --------------------------------------------------------------------------
-       Self-contained controller for the platform/format radio group.
-       It does NOT touch app.js's handlers — it only:
-         1. keeps the visual selection in sync,
-         2. updates the human-readable format note,
-         3. publishes the chosen profile on window.LELA / a DOM event,
-         4. mirrors the profile onto #downloadRecordingButton's data-* attributes
-            (in the capture phase, so app.js can read them when its click
-             handler runs).
-       ========================================================================== -->
   <script>
-    (function () {
-      'use strict';
+    const TOKEN_KEY    = "lela_admin_token";
+    const HEARTBEAT_MS = 20000;
+    const REFRESH_MS   = 8000;
 
-      var PROFILES = {
-        tiktok: {
-          label: 'TikTok',
-          ratio: '9:16',
-          width: 1080,
-          height: 1920,
-          extension: 'mp4',
-          mimeType: 'video/mp4',
-          filenameSuffix: '-tiktok',
-          note: 'Vertical 9:16 · 1080 × 1920 · caption-safe zones kept clear'
-        },
-        instagram: {
-          label: 'Instagram Reels',
-          ratio: '9:16',
-          width: 1080,
-          height: 1920,
-          extension: 'mp4',
-          mimeType: 'video/mp4',
-          filenameSuffix: '-reels',
-          note: 'Vertical 9:16 · 1080 × 1920 · Reels-safe margins, up to 90s'
-        },
-        shorts: {
-          label: 'YouTube Shorts',
-          ratio: '9:16',
-          width: 1080,
-          height: 1920,
-          extension: 'mp4',
-          mimeType: 'video/mp4',
-          filenameSuffix: '-shorts',
-          note: 'Vertical 9:16 · 1080 × 1920 · trimmed to 60s max for Shorts'
-        },
-        youtube: {
-          label: 'YouTube',
-          ratio: '16:9',
-          width: 1920,
-          height: 1080,
-          extension: 'mp4',
-          mimeType: 'video/mp4',
-          filenameSuffix: '-youtube',
-          note: 'Landscape 16:9 · 1920 × 1080 · vertical source is centred over a soft blur fill'
-        },
-        original: {
-          label: 'Original',
-          ratio: 'as recorded',
-          width: null,
-          height: null,
-          extension: 'webm',
-          mimeType: 'video/webm',
-          filenameSuffix: '',
-          note: 'Untouched capture · original resolution and codec, no re-encoding'
-        }
+    let adminToken     = sessionStorage.getItem(TOKEN_KEY);
+    let isLoggedIn     = false;
+    let heartbeatTimer = null;
+    let refreshTimer   = null;
+    let currentTab     = "reportsPanel";
+
+    const reportsCache = new Map();
+    const clientsCache = new Map();
+    const bansCache    = new Map();
+    const adsCache     = new Map();
+
+    const $ = (id) => document.getElementById(id);
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function fmtTime(ts) {
+      if (!ts) return "—";
+      const d = new Date(ts);
+      return isNaN(d) ? "—" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+
+    function fmtDateTime(ts) {
+      if (!ts) return "—";
+      const d = new Date(ts);
+      return isNaN(d) ? "—" : d.toLocaleString();
+    }
+
+    function emptyRow(cols, message) {
+      return `<tr><td colspan="${cols}" style="text-align:center; color: var(--text-muted);">${escapeHtml(message)}</td></tr>`;
+    }
+
+    function getAuthHeaders() {
+      return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${adminToken}`
       };
+    }
 
-      var DEFAULT_PLATFORM = 'tiktok';
+    function clearLoginForm() {
+      const form = $("loginForm");
+      form.reset();
+      const userEl = $("adminUsername");
+      const passEl = $("adminPassword");
+      userEl.value = "";
+      passEl.value = "";
+      userEl.setAttribute("readonly", "readonly");
+      passEl.setAttribute("readonly", "readonly");
+      setTimeout(() => {
+        userEl.removeAttribute("readonly");
+        passEl.removeAttribute("readonly");
+      }, 400);
+      const errEl = $("loginError");
+      errEl.textContent = "";
+      errEl.style.display = "none";
+    }
 
-      var container   = document.getElementById('platformOptions');
-      var noteEl      = document.getElementById('platformFormatNote');
-      var downloadBtn = document.getElementById('downloadRecordingButton');
+    function showLoginError(message, color = "#ef4444") {
+      const errEl = $("loginError");
+      errEl.textContent = message;
+      errEl.style.color = color;
+      errEl.style.display = "block";
+    }
 
-      if (!container) { return; }
+    function resetDashboard() {
+      ["statOnline","statWaiting","statPairs","statReports","statBans","statAds"]
+        .forEach(id => { const el = $(id); if (el) el.textContent = "0"; });
+      ["tabReportsCount","tabUsersCount","tabBansCount","tabAdsCount"]
+        .forEach(id => { const el = $(id); if (el) el.textContent = "0"; });
 
-      var buttons = Array.prototype.slice.call(
-        container.querySelectorAll('.platform-option')
-      );
+      reportsCache.clear(); clientsCache.clear(); bansCache.clear(); adsCache.clear();
 
-      if (!buttons.length) { return; }
+      $("reportsTableBody").innerHTML = emptyRow(6, "Sign in to view reports.");
+      $("usersTableBody").innerHTML   = emptyRow(5, "Sign in to view clients.");
+      $("bansTableBody").innerHTML    = emptyRow(5, "Sign in to view bans.");
+      $("adsTableBody").innerHTML     = emptyRow(7, "Sign in to manage ads.");
+      $("adFilePreview").innerHTML    = "";
 
-      var current = DEFAULT_PLATFORM;
+      $("redisStatus").innerHTML    = `<span class="dot amber"></span> Redis: —`;
+      $("supabaseStatus").innerHTML = `<span class="dot amber"></span> Supabase: —`;
+    }
 
-      /* -------- publish the active profile everywhere -------- */
+    function showLoginOverlay(message) {
+      stopHeartbeat();
+      stopAutoRefresh();
+      adminToken = null;
+      isLoggedIn = false;
+      sessionStorage.removeItem(TOKEN_KEY);
+      resetDashboard();
+      clearLoginForm();
+      $("loginOverlay").style.display = "flex";
+      if (message) showLoginError(message, "#fbbf24");
+    }
 
-      function publish(key) {
-        var profile = PROFILES[key] || PROFILES[DEFAULT_PLATFORM];
+    $("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = $("adminUsername").value.trim();
+      const password = $("adminPassword").value;
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      $("loginError").style.display = "none";
 
-        var payload = {
-          platform: key,
-          label: profile.label,
-          ratio: profile.ratio,
-          width: profile.width,
-          height: profile.height,
-          extension: profile.extension,
-          mimeType: profile.mimeType,
-          filenameSuffix: profile.filenameSuffix,
-          note: profile.note
-        };
+      if (!username || !password) {
+        showLoginError("Username and password are required.");
+        return;
+      }
 
-        window.LELA = window.LELA || {};
-        window.LELA.exportProfile = payload;
-        window.LELA.platform = key;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Authenticating...";
 
-        if (downloadBtn) {
-          downloadBtn.dataset.exportPlatform  = key;
-          downloadBtn.dataset.exportLabel     = profile.label;
-          downloadBtn.dataset.exportRatio     = profile.ratio;
-          downloadBtn.dataset.exportWidth     = profile.width  == null ? '' : String(profile.width);
-          downloadBtn.dataset.exportHeight    = profile.height == null ? '' : String(profile.height);
-          downloadBtn.dataset.exportExtension = profile.extension;
-          downloadBtn.dataset.exportMime      = profile.mimeType;
-          downloadBtn.dataset.exportSuffix    = profile.filenameSuffix;
-        }
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Login failed");
 
+        adminToken = data.token;
+        sessionStorage.setItem(TOKEN_KEY, adminToken);
+        isLoggedIn = true;
+
+        $("adminPassword").value = "";
+        $("loginOverlay").style.display = "none";
+
+        startHeartbeat();
+        startAutoRefresh();
+        await fetchAdminData();
+      } catch (err) {
+        showLoginError(err.message || "Login failed");
+        $("adminPassword").value = "";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Authenticate";
+      }
+    });
+
+    async function logoutAdmin() {
+      const token = adminToken;
+      stopHeartbeat();
+      stopAutoRefresh();
+      adminToken = null;
+      isLoggedIn = false;
+      sessionStorage.removeItem(TOKEN_KEY);
+      resetDashboard();
+      clearLoginForm();
+      $("loginOverlay").style.display = "flex";
+
+      if (token) {
         try {
-          window.dispatchEvent(
-            new CustomEvent('lela:platform-change', { detail: payload })
-          );
-        } catch (err) {
-          /* CustomEvent unsupported — the global + data-* attrs still work */
+          await fetch("/api/admin/logout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
+          });
+        } catch (_) {}
+      }
+      showLoginError("You have been signed out. Please sign in again.", "#9ca3af");
+    }
+
+    function sessionExpired() {
+      showLoginOverlay("Your session has ended. Please sign in again.");
+    }
+
+    function startHeartbeat() {
+      stopHeartbeat();
+      heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_MS);
+    }
+    function stopHeartbeat() {
+      if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    }
+    async function sendHeartbeat() {
+      if (!adminToken || !isLoggedIn) return;
+      try {
+        const res = await fetch("/api/admin/heartbeat", {
+          method: "POST",
+          headers: getAuthHeaders()
+        });
+        if (res.status === 401) sessionExpired();
+      } catch (_) {}
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && isLoggedIn) {
+        sendHeartbeat();
+        fetchAdminData();
+      }
+    });
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      refreshTimer = setInterval(() => {
+        if (!isLoggedIn) return;
+        if (document.visibilityState !== "visible") return;
+        fetchAdminData();
+      }, REFRESH_MS);
+    }
+    function stopAutoRefresh() {
+      if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+    }
+
+    $("tabBar").addEventListener("click", (e) => {
+      const btn = e.target.closest(".tab-btn");
+      if (!btn) return;
+      switchTab(btn.dataset.panel, btn);
+    });
+
+    function switchTab(panelId, btnEl) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      btnEl.classList.add("active");
+      const panel = $(panelId);
+      if (panel) panel.classList.add("active");
+      currentTab = panelId;
+      if (panelId === "adsPanel" && isLoggedIn) fetchAds();
+    }
+
+    async function fetchAdminData() {
+      if (!adminToken || !isLoggedIn) return;
+      try {
+        const res = await fetch("/api/admin/stats", { headers: getAuthHeaders() });
+        if (res.status === 401) return sessionExpired();
+        const data = await res.json();
+
+        $("statOnline").textContent  = data.onlineCount ?? 0;
+        $("statWaiting").textContent = data.waitingCount ?? 0;
+        $("statPairs").textContent   = data.activePairsCount ?? 0;
+        $("statReports").textContent = data.totalReports ?? 0;
+        $("statBans").textContent    = data.totalBans ?? 0;
+        if (data.totalAds !== undefined) $("statAds").textContent = data.totalAds;
+
+        $("redisStatus").innerHTML = data.redisConnected
+          ? `<span class="dot green"></span> Redis: Connected`
+          : `<span class="dot amber"></span> Redis: In-Memory`;
+        $("supabaseStatus").innerHTML = data.supabaseConnected
+          ? `<span class="dot green"></span> Supabase: Connected`
+          : `<span class="dot amber"></span> Supabase: In-Memory`;
+
+        fetchReports();
+        fetchLiveConnections();
+        fetchBans();
+        if (currentTab === "adsPanel") fetchAds();
+      } catch (err) { console.error("Error fetching stats:", err); }
+    }
+
+    async function fetchReports() {
+      if (!adminToken || !isLoggedIn) return;
+      try {
+        const res = await fetch("/api/admin/reports", { headers: getAuthHeaders() });
+        if (res.status === 401) return sessionExpired();
+        const data = await res.json();
+        renderReports(Array.isArray(data.reports) ? data.reports : []);
+      } catch (err) { console.error("Error fetching reports:", err); }
+    }
+
+    function renderReports(reports) {
+      const tbody = $("reportsTableBody");
+      reportsCache.clear();
+      $("tabReportsCount").textContent = reports.length;
+
+      if (!reports.length) {
+        tbody.innerHTML = emptyRow(6, "No reports submitted yet.");
+        return;
+      }
+
+      tbody.innerHTML = reports.map(r => {
+        const id = String(r.id);
+        reportsCache.set(id, r);
+        const status = String(r.status || "pending").toLowerCase();
+        const reportedIp = r.reported_ip || "unknown";
+        const canBan = reportedIp && reportedIp !== "unknown";
+
+        return `
+          <tr>
+            <td>${escapeHtml(fmtTime(r.created_at))}</td>
+            <td><strong>Client #${escapeHtml(r.reported_id ?? "N/A")}</strong><br><small class="muted">${escapeHtml(reportedIp)}</small></td>
+            <td>Client #${escapeHtml(r.reporter_id ?? "N/A")}<br><small class="muted">${escapeHtml(r.reporter_ip || "unknown")}</small></td>
+            <td><strong class="danger-text">${escapeHtml(r.reason || "—")}</strong></td>
+            <td><span class="tag tag-${escapeHtml(status)}">${escapeHtml(status.toUpperCase())}</span></td>
+            <td class="actions-cell">
+              ${canBan ? `<button class="btn btn-sm btn-danger" data-action="ban-report" data-id="${escapeHtml(id)}">🚫 Ban IP</button>` : ""}
+              ${status === "pending" ? `<button class="btn btn-sm" data-action="dismiss-report" data-id="${escapeHtml(id)}">Dismiss</button>` : ""}
+            </td>
+          </tr>`;
+      }).join("");
+    }
+
+    $("reportsTableBody").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const report = reportsCache.get(btn.dataset.id);
+      if (!report) return;
+      if (btn.dataset.action === "ban-report") banReportedIp(btn.dataset.id, report.reported_ip, report.reason);
+      else if (btn.dataset.action === "dismiss-report") resolveReport(btn.dataset.id, "dismissed");
+    });
+
+    async function fetchLiveConnections() {
+      if (!adminToken || !isLoggedIn) return;
+      try {
+        const res = await fetch("/api/admin/connections", { headers: getAuthHeaders() });
+        if (res.status === 401) return sessionExpired();
+        const data = await res.json();
+        const clients = Array.isArray(data.clients) ? data.clients : [];
+        const tbody = $("usersTableBody");
+        clientsCache.clear();
+        $("tabUsersCount").textContent = clients.length;
+
+        if (!clients.length) {
+          tbody.innerHTML = emptyRow(5, "No active connections.");
+          return;
         }
 
-        return payload;
+        tbody.innerHTML = clients.map(c => {
+          const id = String(c.id);
+          clientsCache.set(id, c);
+          const statusTag = c.isMatched
+            ? '<span class="tag tag-reviewed">In Video Chat</span>'
+            : (c.isReady ? '<span class="tag tag-pending">Waiting Match</span>'
+                         : '<span class="tag tag-dismissed">Idle</span>');
+          return `
+            <tr>
+              <td><strong>#${escapeHtml(id)}</strong></td>
+              <td><code>${escapeHtml(c.ip || "unknown")}</code></td>
+              <td>${statusTag}</td>
+              <td>${c.peerId ? `Client #${escapeHtml(c.peerId)}` : "—"}</td>
+              <td class="actions-cell">
+                <button class="btn btn-sm btn-danger" data-action="kick" data-id="${escapeHtml(id)}">Kick</button>
+                <button class="btn btn-sm btn-danger" data-action="ban-client" data-id="${escapeHtml(id)}">Ban IP</button>
+              </td>
+            </tr>`;
+        }).join("");
+      } catch (err) { console.error("Error fetching connections:", err); }
+    }
+
+    $("usersTableBody").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const client = clientsCache.get(btn.dataset.id);
+      if (!client) return;
+      if (btn.dataset.action === "kick") kickClient(client.id);
+      else if (btn.dataset.action === "ban-client") banClientIp(client.ip, "Kicked and banned by admin");
+    });
+
+    async function fetchBans() {
+      if (!adminToken || !isLoggedIn) return;
+      try {
+        const res = await fetch("/api/admin/bans", { headers: getAuthHeaders() });
+        if (res.status === 401) return sessionExpired();
+        const data = await res.json();
+        const bans = Array.isArray(data.bans) ? data.bans : [];
+        const tbody = $("bansTableBody");
+        bansCache.clear();
+        $("tabBansCount").textContent = bans.length;
+
+        if (!bans.length) {
+          tbody.innerHTML = emptyRow(5, "No active bans.");
+          return;
+        }
+
+        tbody.innerHTML = bans.map(b => {
+          const ip = String(b.ip);
+          bansCache.set(ip, b);
+          return `
+            <tr>
+              <td><strong><code>${escapeHtml(ip)}</code></strong></td>
+              <td>${escapeHtml(b.reason || "—")}</td>
+              <td>${escapeHtml(b.banned_by || "admin")}</td>
+              <td>${escapeHtml(fmtDateTime(b.banned_at))}</td>
+              <td class="actions-cell">
+                <button class="btn btn-sm" data-action="unban" data-ip="${escapeHtml(ip)}">Unblock</button>
+              </td>
+            </tr>`;
+        }).join("");
+      } catch (err) { console.error("Error fetching bans:", err); }
+    }
+
+    $("bansTableBody").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action='unban']");
+      if (!btn) return;
+      unbanIp(btn.dataset.ip);
+    });
+
+    async function banReportedIp(reportId, ip, reason) {
+      if (!confirm(`Are you sure you want to block IP ${ip}?`)) return;
+      try {
+        await adminPost("/api/admin/ban", { ip, reason: `Report violation: ${reason}` });
+        await resolveReport(reportId, "banned");
+        fetchAdminData();
+      } catch (err) { alert("Action failed: " + err.message); }
+    }
+
+    async function resolveReport(reportId, status) {
+      try {
+        await adminPost(`/api/admin/reports/${encodeURIComponent(reportId)}/status`, { status });
+        fetchReports();
+      } catch (err) { console.error("Error resolving report:", err); }
+    }
+
+    async function kickClient(clientId) {
+      if (!confirm(`Disconnect client #${clientId}?`)) return;
+      try {
+        await adminPost("/api/admin/kick", { clientId });
+        fetchAdminData();
+      } catch (err) { alert("Kick failed: " + err.message); }
+    }
+
+    async function banClientIp(ip, reason) {
+      if (!confirm(`Block IP address ${ip}?`)) return;
+      try {
+        await adminPost("/api/admin/ban", { ip, reason });
+        fetchAdminData();
+      } catch (err) { alert("Ban failed: " + err.message); }
+    }
+
+    async function unbanIp(ip) {
+      if (!confirm(`Unblock IP address ${ip}?`)) return;
+      try {
+        await adminPost("/api/admin/unban", { ip });
+        fetchAdminData();
+      } catch (err) { alert("Unban failed: " + err.message); }
+    }
+
+    async function handleManualBan(e) {
+      e.preventDefault();
+      const ip = $("banIpInput").value.trim();
+      const reason = $("banReasonInput").value.trim();
+      if (!ip || !reason) return;
+      try {
+        await adminPost("/api/admin/ban", { ip, reason });
+        $("banIpInput").value = "";
+        $("banReasonInput").value = "";
+        fetchAdminData();
+      } catch (err) { alert("Ban failed: " + err.message); }
+    }
+
+    async function handleSendBroadcast(e) {
+      e.preventDefault();
+      const message = $("broadcastInput").value.trim();
+      if (!message) return;
+      try {
+        await adminPost("/api/admin/broadcast", { message });
+        alert("Broadcast announcement published to all active users!");
+        $("broadcastInput").value = "";
+      } catch (err) { alert("Broadcast failed: " + err.message); }
+    }
+
+    async function adminPost(url, body) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(body)
+      });
+      if (res.status === 401) { sessionExpired(); throw new Error("Session expired"); }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Request failed (${res.status})`);
+      }
+      return res.json().catch(() => ({}));
+    }
+
+    $("adFile").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      const box = $("adFilePreview");
+      box.innerHTML = "";
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      const el = document.createElement(file.type.startsWith("video/") ? "video" : "img");
+      el.src = url;
+      el.className = "ad-thumb";
+      if (el.tagName === "VIDEO") { el.muted = true; el.playsInline = true; el.loop = true; el.autoplay = true; }
+      el.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
+      box.appendChild(el);
+    });
+
+    async function fetchAds() {
+      if (!adminToken || !isLoggedIn) return;
+      try {
+        const res = await fetch("/api/admin/ads", { headers: getAuthHeaders() });
+        if (res.status === 401) return sessionExpired();
+        const data = await res.json();
+        renderAds(Array.isArray(data.ads) ? data.ads : []);
+      } catch (err) { console.error("Error fetching ads:", err); }
+    }
+
+    function renderAds(ads) {
+      const tbody = $("adsTableBody");
+      adsCache.clear();
+      const liveCount = ads.filter(a => a.active).length;
+      $("tabAdsCount").textContent = ads.length;
+      $("statAds").textContent = liveCount;
+
+      if (!ads.length) {
+        tbody.innerHTML = emptyRow(7, "No ads published yet.");
+        return;
       }
 
-      /* -------- update the note text with a small flash -------- */
+      tbody.innerHTML = ads.map(ad => {
+        const id = String(ad.id);
+        adsCache.set(id, ad);
+        const isVideo = ad.media_type === "video";
+        const thumb = isVideo
+          ? `<video class="ad-thumb" src="${escapeHtml(ad.media_url)}" muted playsinline preload="metadata"></video>`
+          : `<img class="ad-thumb" src="${escapeHtml(ad.media_url)}" alt="" loading="lazy"
+                  onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ad-thumb-placeholder',textContent:'🖼️'}))">`;
 
-      function renderNote(key) {
-        if (!noteEl) { return; }
-        var profile = PROFILES[key] || PROFILES[DEFAULT_PLATFORM];
-        noteEl.textContent = profile.note;
-        noteEl.dataset.platform = key;
+        return `
+          <tr>
+            <td>${thumb}</td>
+            <td>${escapeHtml(ad.title || "Untitled")}</td>
+            <td>${isVideo ? "🎬 Video" : "🖼️ Image"}</td>
+            <td>${escapeHtml(ad.placement || "corner")}</td>
+            <td><span class="tag ${ad.active ? "tag-live" : "tag-paused"}">${ad.active ? "LIVE" : "PAUSED"}</span></td>
+            <td>${escapeHtml(fmtDateTime(ad.created_at))}</td>
+            <td class="actions-cell">
+              <button class="btn btn-sm" data-action="toggle-ad" data-id="${escapeHtml(id)}">
+                ${ad.active ? "Pause" : "Activate"}
+              </button>
+              <button class="btn btn-sm btn-danger" data-action="delete-ad" data-id="${escapeHtml(id)}">Delete</button>
+            </td>
+          </tr>`;
+      }).join("");
+    }
 
-        noteEl.classList.remove('flash');
-        /* force reflow so the animation can restart */
-        void noteEl.offsetWidth;
-        noteEl.classList.add('flash');
+    $("adsTableBody").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const ad = adsCache.get(btn.dataset.id);
+      if (!ad) return;
+      if (btn.dataset.action === "toggle-ad") toggleAd(ad.id, !ad.active);
+      else if (btn.dataset.action === "delete-ad") deleteAd(ad.id, ad.title);
+    });
+
+    async function handleAdSubmit(e) {
+      e.preventDefault();
+      const fileInput = $("adFile");
+      const file = fileInput.files[0];
+      const mediaUrl = $("adMediaUrl").value.trim();
+
+      if (!file && !mediaUrl) { alert("Please choose a media file or paste a media URL."); return; }
+      if (file && file.size > 25 * 1024 * 1024) {
+        alert("File is larger than 25 MB. Please compress it or host it externally and paste the URL.");
+        return;
       }
 
-      /* -------- selection -------- */
+      const btn = $("adSubmitBtn");
+      btn.disabled = true;
+      btn.textContent = "Uploading...";
 
-      function select(key, options) {
-        options = options || {};
+      try {
+        const fd = new FormData();
+        fd.append("title", $("adTitle").value.trim());
+        fd.append("link_url", $("adLink").value.trim());
+        fd.append("placement", $("adPlacement").value);
+        fd.append("rotation_seconds", $("adRotation").value || "12");
+        fd.append("active", $("adActive").checked ? "true" : "false");
 
-        if (!PROFILES[key]) { key = DEFAULT_PLATFORM; }
+        if (file) fd.append("media", file);
+        else fd.append("media_url", mediaUrl);
 
-        current = key;
-
-        buttons.forEach(function (btn) {
-          var isOn = btn.dataset.platform === key;
-          btn.classList.toggle('selected', isOn);
-          btn.setAttribute('aria-checked', isOn ? 'true' : 'false');
-          btn.tabIndex = isOn ? 0 : -1;
+        const res = await fetch("/api/admin/ads", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${adminToken}` },
+          body: fd
         });
 
-        renderNote(key);
-        publish(key);
-
-        if (options.focus) {
-          var active = buttons.filter(function (b) {
-            return b.dataset.platform === key;
-          })[0];
-          if (active) { active.focus(); }
+        if (res.status === 401) return sessionExpired();
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Upload failed");
         }
+
+        $("adForm").reset();
+        $("adFilePreview").innerHTML = "";
+        await fetchAds();
+      } catch (err) {
+        alert("Could not publish ad: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Publish Ad";
       }
+    }
 
-      /* -------- pointer interaction -------- */
+    async function toggleAd(id, active) {
+      try {
+        await adminPost(`/api/admin/ads/${encodeURIComponent(id)}/status`, { active });
+        fetchAds();
+      } catch (err) { alert("Update failed: " + err.message); }
+    }
 
-      container.addEventListener('click', function (event) {
-        var btn = event.target.closest
-          ? event.target.closest('.platform-option')
-          : null;
+    async function deleteAd(id, title) {
+      if (!confirm(`Delete ad "${title || "Untitled"}"? This cannot be undone.`)) return;
+      try {
+        const res = await fetch(`/api/admin/ads/${encodeURIComponent(id)}`, {
+          method: "DELETE",
+          headers: getAuthHeaders()
+        });
+        if (res.status === 401) return sessionExpired();
+        if (!res.ok) throw new Error("Delete failed");
+        fetchAds();
+      } catch (err) { alert("Delete failed: " + err.message); }
+    }
 
-        if (!btn || !container.contains(btn)) { return; }
-
-        select(btn.dataset.platform);
-      });
-
-      /* -------- keyboard interaction (radiogroup pattern) -------- */
-
-      container.addEventListener('keydown', function (event) {
-        var handledKeys = [
-          'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'
-        ];
-
-        if (handledKeys.indexOf(event.key) === -1) { return; }
-
-        var index = buttons.indexOf(document.activeElement);
-
-        if (index === -1) {
-          index = buttons.findIndex(function (b) {
-            return b.classList.contains('selected');
-          });
-          if (index === -1) { index = 0; }
-        }
-
-        var next = index;
-
-        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-          next = (index + 1) % buttons.length;
-        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-          next = (index - 1 + buttons.length) % buttons.length;
-        } else if (event.key === 'Home') {
-          next = 0;
-        } else if (event.key === 'End') {
-          next = buttons.length - 1;
-        }
-
-        event.preventDefault();
-        select(buttons[next].dataset.platform, { focus: true });
-      });
-
-      /* -------- safety net: re-publish right before a download --------
-         Capture phase guarantees this runs before any bubble-phase
-         handler app.js has attached to the same button.               */
-
-      if (downloadBtn) {
-        downloadBtn.addEventListener('click', function () {
-          publish(current);
-        }, true);
+    (function init() {
+      clearLoginForm();
+      if (adminToken) {
+        isLoggedIn = true;
+        $("loginOverlay").style.display = "none";
+        startHeartbeat();
+        startAutoRefresh();
+        fetchAdminData();
+      } else {
+        $("loginOverlay").style.display = "flex";
       }
-
-      /* -------- public API -------- */
-
-      window.LELA = window.LELA || {};
-      window.LELA.getExportProfile = function () {
-        return window.LELA.exportProfile;
-      };
-      window.LELA.setExportPlatform = function (key) {
-        select(key);
-        return window.LELA.exportProfile;
-      };
-      window.LELA.resetExportPlatform = function () {
-        select(DEFAULT_PLATFORM);
-        return window.LELA.exportProfile;
-      };
-
-      /* -------- initial state -------- */
-
-      var initial = buttons.filter(function (b) {
-        return b.classList.contains('selected');
-      })[0];
-
-      select(initial ? initial.dataset.platform : DEFAULT_PLATFORM);
     })();
   </script>
-
-  <script src="/app.js"></script>
 </body>
 </html>
