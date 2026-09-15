@@ -1168,6 +1168,18 @@ async function handleSignalingMessage(message) {
       handlePeerDisconnected();
       break;
 
+    case "banned":
+      handleBanned(message.reason);
+      break;
+
+    case "broadcast":
+      handleBroadcast(message.text);
+      break;
+
+    case "report-received":
+      debug("Report acknowledged by server.");
+      break;
+
     default:
       // Unknown message type — ignore silently so we never accidentally
       // tear down a healthy connection.
@@ -1205,6 +1217,123 @@ function handlePeerDisconnected() {
         : "Stranger left. Looking for someone new..."
     );
   }
+}
+
+
+/* ============================================================
+   BAN HANDLING
+   ============================================================ */
+
+function handleBanned(reason) {
+  debug("Received ban notification from server.");
+
+  // 1. Immediately clear remote video so the banned user never sees
+  //    the previous peer's face after the ban is applied.
+  remoteVideo.srcObject = null;
+
+  // 2. Tear down peer connection
+  isMatched = false;
+  closeChatChannel();
+  clearChat();
+
+  if (peerConnection) {
+    try { peerConnection.close(); } catch (e) {}
+  }
+  peerConnection = null;
+  pendingIceCandidates = [];
+
+  // 3. Stop local camera
+  if (localStream) {
+    localStream.getTracks().forEach((track) => {
+      try { track.stop(); } catch (e) {}
+    });
+  }
+  localStream = null;
+  localVideo.srcObject = null;
+
+  hasStartedCamera = false;
+  startButton.disabled = true; // Can't restart — they're banned
+
+  // 4. Stop recording if active
+  if (mediaRecorder) {
+    try { stopLocalRecording(); } catch (e) {}
+  }
+
+  // 5. Close WebSocket — server will close it too, but be proactive
+  if (socket) {
+    try { socket.close(); } catch (e) {}
+    socket = null;
+  }
+
+  updateVideoPlaceholders();
+  updateMatchButtons();
+  updateStopButton();
+
+  // 6. Show ban overlay
+  showBanModal(reason || "Your access has been suspended due to a community guidelines violation.");
+}
+
+function showBanModal(reason) {
+  // Remove existing ban modal if any
+  const existing = document.getElementById("banModalBackdrop");
+  if (existing) existing.remove();
+
+  const backdrop = document.createElement("div");
+  backdrop.id = "banModalBackdrop";
+  backdrop.style.cssText = `
+    position: fixed; inset: 0; z-index: 99999;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+  `;
+
+  backdrop.innerHTML = `
+    <div style="
+      background: #1a1d2e; border-radius: 16px; padding: 40px 32px;
+      max-width: 420px; width: 90%; text-align: center; color: #fff;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    ">
+      <div style="font-size: 48px; margin-bottom: 16px;">🚫</div>
+      <h2 style="margin: 0 0 12px; font-size: 22px; color: #ff4d6a;">Access Suspended</h2>
+      <p style="margin: 0 0 20px; font-size: 14px; color: #adb5c7; line-height: 1.6;">
+        ${reason}
+      </p>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">
+        If you believe this is a mistake, please contact support.
+      </p>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+  setStatus("Access suspended.");
+}
+
+
+/* ============================================================
+   BROADCAST HANDLING
+   ============================================================ */
+
+function handleBroadcast(text) {
+  if (!text) return;
+  debug("Admin broadcast:", text);
+
+  // Show as a temporary toast notification
+  const toast = document.createElement("div");
+  toast.style.cssText = `
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 99998; background: #2563eb; color: #fff;
+    padding: 12px 24px; border-radius: 10px; font-size: 14px;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+    animation: fadeInDown 0.3s ease;
+    max-width: 90%; text-align: center;
+  `;
+  toast.textContent = `📢 ${text}`;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transition = "opacity 0.5s ease";
+    setTimeout(() => toast.remove(), 500);
+  }, 6000);
 }
 
 function stopVideoChat() {

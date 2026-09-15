@@ -113,8 +113,10 @@ const server = http.createServer(async (req, res) => {
     // GET /api/admin/stats
     if (requestPath === "/api/admin/stats" && req.method === "GET") {
       let activePairs = 0;
+      const uniqueIps = new Set();
       for (const client of connectedClients) {
         if (client.peer) activePairs++;
+        if (client.ip) uniqueIps.add(client.ip);
       }
       activePairs = Math.floor(activePairs / 2);
 
@@ -122,7 +124,8 @@ const server = http.createServer(async (req, res) => {
       const allBans = await supabase.getBans();
 
       return sendJson(200, {
-        onlineCount: connectedClients.size,
+        onlineCount: uniqueIps.size,
+        totalConnections: connectedClients.size,
         waitingCount: waitingClients.length,
         activePairsCount: activePairs,
         totalReports: allReports.length,
@@ -308,9 +311,16 @@ const waitingClients = [];
 const connectedClients = new Set();
 
 function broadcastOnlineCount() {
+  // Deduplicate by IP so the same person with multiple tabs = 1 user
+  const uniqueIps = new Set();
+  for (const client of connectedClients) {
+    if (client.ip) uniqueIps.add(client.ip);
+    else uniqueIps.add(client.id); // fallback if IP is missing
+  }
+
   const message = {
     type: "online-count",
-    count: connectedClients.size
+    count: uniqueIps.size
   };
 
   for (const client of connectedClients) {
