@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const WebSocket = require("ws");
+const formidable = require("formidable"); // NEW: For handling file uploads
 
 const supabase = require("./lib/supabase");
 const redis = require("./lib/redis");
@@ -15,11 +16,20 @@ const HOST = process.env.HOST || "0.0.0.0";
 
 const publicDir = path.join(__dirname, "public");
 const adminDir = path.join(__dirname, "admin");
+const uploadsDir = path.join(__dirname, "uploads"); // NEW: Ad uploads directory
+
+// Ensure the uploads directory exists
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 // Admin auth credentials & active sessions
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const adminTokens = new Set();
+
+// In-memory storage for ads (Replace with Supabase for persistence across restarts)
+let ads = [];
 
 function getClientIp(req) {
   const forwarded = req.headers["x-forwarded-for"];
@@ -74,7 +84,7 @@ const server = http.createServer(async (req, res) => {
   // ADMIN ROUTES
   // --------------------------------------------------
 
-  // Admin Dashboard page (completely separated from public folder)
+  // Admin Dashboard page
   if (requestPath === "/admin" || requestPath === "/admin/") {
     const adminHtmlPath = path.join(adminDir, "index.html");
     fs.readFile(adminHtmlPath, (err, data) => {
@@ -130,6 +140,7 @@ const server = http.createServer(async (req, res) => {
         activePairsCount: activePairs,
         totalReports: allReports.length,
         totalBans: allBans.length,
+        totalAds: ads.filter(a => a.active).length, // NEW: Live ads count
         redisConnected: redis.isRedisConfigured(),
         supabaseConnected: supabase.isSupabaseConfigured()
       });
@@ -180,7 +191,6 @@ const server = http.createServer(async (req, res) => {
       await supabase.addBan({ ip, reason, bannedBy: "admin", durationHours });
       await redis.addBannedIp(ip);
 
-      // Immediately terminate any active client with this IP
       for (const client of connectedClients) {
         if (client.ip === ip) {
           send(client, { type: "banned", reason: reason || "Suspended by moderator." });
@@ -249,7 +259,110 @@ const server = http.createServer(async (req, res) => {
       return sendJson(200, { success: true, sentTo: connectedClients.size });
     }
 
+    // ================== ADS MANAGEMENT ==================
+
+    // GET /api/admin/ads - List all ads
+    if (requestPath === "/api/admin/ads" && req.method === "GET") {
+      return sendJson(200, { ads });
+    }
+
+    // POST /api/admin/ads - Create a new ad (Handles FormData)
+    if (requestPath === "/api/admin/ads" && req.method === "POST") {
+      const form = new formidable.IncomingForm({
+        uploadDir: uploadsDir,
+        keepExtensions: true,
+        maxFileSize: 25 * 1024 * 1024 // 25MB limit
+      });
+
+      form.parse(req, (err, fields, files) => {
+        if (err) {
+          console.error("Form parse error:", err);
+          return sendJson(500, { error: "File upload failed or too large" });
+        }
+
+        // Formidable v3 returns arrays for fields, so we grab the first item
+        const getField = (val) => Array.isArray(val) ? val[0] : val;
+        
+        const title = getField(fields.title) || "Untitled";
+        const link_url = getField(fields.link_url) || "";
+        const placement = getField(fields.placement) || "corner";
+        const rotation_seconds = parseInt(getField(fields.rotation_seconds)) || 12;
+        const active = getField(fields.active) === "true";
+        
+        let mediaUrl = getField(fields.media_url) || "";
+        let mediaType = "image";
+
+        // If a file was uploaded, generate its public URL
+        if (files.media && files.media.length > 0) {
+          const file = files.media[0];
+          mediaUrl = `/uploads/${path.basename(file.filepath)}`;
+          mediaType = file.mimetype.startsWith("video/") ? "video" : "image";
+        } else if (mediaUrl) {
+          mediaType = mediaUrl.match(/\.(mp4|webm|ogg)$/i) ? "video" : "image";
+        }
+
+        if (!mediaUrl) {
+          return sendJson(400, { error: "Media file or URL is required" });
+        }
+
+        const newAd = {
+          id: Date.now().toString(),
+          title,
+          link_url,
+          placement,
+          rotation_seconds,
+          active,
+          media_url: mediaUrl,
+          media_type: mediaType,
+          created_at: new Date().toISOString()
+        };
+
+        ads.push(newAd);
+        supabase.logAction("AD_CREATED", { title, mediaUrl });
+        return sendJson(200, { success: true, ad: newAd });
+      });
+      return; // Important: return here because form.parse is async
+    }
+
+    // PUT /api/admin/ads/:id/status - Toggle Ad Status
+    const adStatusMatch = requestPath.match(/^\/api\/admin\/ads\/([^/]+)\/status$/);
+    if (adStatusMatch && req.method === "PUT") {
+      const adId = adStatusMatch[1];
+      const { active } = await parseJsonBody(req);
+      const ad = ads.find(a => a.id === adId);
+      if (!ad) return sendJson(404, { error: "Ad not found" });
+      ad.active = active;
+      return sendJson(200, { success: true, ad });
+    }
+
+    // DELETE /api/admin/ads/:id - Delete an Ad
+    const adDeleteMatch = requestPath.match(/^\/api\/admin\/ads\/([^/]+)$/);
+    if (adDeleteMatch && req.method === "DELETE") {
+      const adId = adDeleteMatch[1];
+      const index = ads.findIndex(a => a.id === adId);
+      if (index === -1) return sendJson(404, { error: "Ad not found" });
+      
+      const ad = ads[index];
+      if (ad.media_url.startsWith('/uploads/')) {
+        const filePath = path.join(__dirname, ad.media_url);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+      
+      ads.splice(index, 1);
+      return sendJson(200, { success: true });
+    }
+
     return sendJson(404, { error: "API endpoint not found" });
+  }
+
+  // --------------------------------------------------
+  // PUBLIC ROUTES
+  // --------------------------------------------------
+
+  // PUBLIC: Get Active Ad for Video Chat Frontend
+  if (requestPath === "/api/ads" && req.method === "GET") {
+    const activeAd = ads.find(a => a.active);
+    return sendJson(200, { ad: activeAd || null });
   }
 
   // --------------------------------------------------
@@ -265,6 +378,30 @@ const server = http.createServer(async (req, res) => {
   } catch (error) {
     res.writeHead(400);
     return res.end("Bad request");
+  }
+
+  // Serve uploaded ad files
+  if (requestPath.startsWith("/uploads/")) {
+    const uploadPath = path.join(__dirname, requestPath);
+    fs.readFile(uploadPath, (err, data) => {
+      if (err) {
+        res.writeHead(404);
+        return res.end("Not found");
+      }
+      const ext = path.extname(uploadPath).toLowerCase();
+      const types = { 
+        ".png": "image/png", 
+        ".jpg": "image/jpeg", 
+        ".jpeg": "image/jpeg", 
+        ".gif": "image/gif", 
+        ".webp": "image/webp", 
+        ".mp4": "video/mp4", 
+        ".webm": "video/webm" 
+      };
+      res.writeHead(200, { "Content-Type": types[ext] || "application/octet-stream" });
+      res.end(data);
+    });
+    return;
   }
 
   const filePath = path.resolve(publicDir, "." + requestPath);
@@ -311,11 +448,10 @@ const waitingClients = [];
 const connectedClients = new Set();
 
 function broadcastOnlineCount() {
-  // Deduplicate by IP so the same person with multiple tabs = 1 user
   const uniqueIps = new Set();
   for (const client of connectedClients) {
     if (client.ip) uniqueIps.add(client.ip);
-    else uniqueIps.add(client.id); // fallback if IP is missing
+    else uniqueIps.add(client.id);
   }
 
   const message = {
@@ -355,7 +491,6 @@ function putInWaitingQueue(socket) {
 }
 
 function tryMatchUsers() {
-  // Purge closed connections
   for (let i = waitingClients.length - 1; i >= 0; i--) {
     if (waitingClients[i].readyState !== WebSocket.OPEN) {
       waitingClients.splice(i, 1);
@@ -382,19 +517,13 @@ function tryMatchUsers() {
     send(clientA, { type: "matched", role: "caller" });
     send(clientB, { type: "matched", role: "callee" });
 
-    // Caller creates offer
     send(clientA, { type: "create-offer" });
   }
 }
 
-// --------------------------------------------------
-// NEW CONNECTION HANDLER
-// --------------------------------------------------
-
 wss.on("connection", async (socket, request) => {
   const clientIp = getClientIp(request);
 
-  // Fast check if IP is banned via Redis / Supabase
   const banned = (await redis.isIpBannedFast(clientIp)) || (await supabase.isIpBanned(clientIp));
   if (banned) {
     console.log(`[SERVER] Rejected connection from banned IP: ${clientIp}`);
@@ -417,10 +546,6 @@ wss.on("connection", async (socket, request) => {
 
   console.log(`[SERVER] Client ${socket.id} connected (IP: ${socket.ip})`);
 
-  // ------------------------------------------------
-  // RECEIVE MESSAGE
-  // ------------------------------------------------
-
   socket.on("message", async (rawMessage) => {
     let message;
     try {
@@ -432,7 +557,6 @@ wss.on("connection", async (socket, request) => {
 
     console.log(`[SERVER] Client ${socket.id} -> ${message.type}`);
 
-    // USER READY
     if (message.type === "ready") {
       if (socket.ready) return;
       socket.ready = true;
@@ -441,7 +565,6 @@ wss.on("connection", async (socket, request) => {
       return;
     }
 
-    // USER STOP
     if (message.type === "stop") {
       removeFromWaiting(socket);
       const oldPeer = socket.peer;
@@ -455,7 +578,6 @@ wss.on("connection", async (socket, request) => {
       return;
     }
 
-    // USER SKIP / NEXT
     if (message.type === "skip") {
       const oldPeer = socket.peer;
       socket.peer = null;
@@ -479,7 +601,6 @@ wss.on("connection", async (socket, request) => {
       return;
     }
 
-    // USER REPORT (SAVED TO SUPABASE & REDIS EVENT)
     if (message.type === "report") {
       const reportedPeer = socket.peer;
       const reportData = {
@@ -498,7 +619,6 @@ wss.on("connection", async (socket, request) => {
       return;
     }
 
-    // FORWARD SIGNALING TO MATCHED PEER
     if (
       message.type === "record-request" ||
       message.type === "record-response" ||
@@ -516,12 +636,10 @@ wss.on("connection", async (socket, request) => {
     }
   });
 
-  // SOCKET ERROR
   socket.on("error", (error) => {
     console.error(`[SERVER] WebSocket error for Client ${socket.id}:`, error.message);
   });
 
-  // CLIENT DISCONNECT
   socket.on("close", () => {
     connectedClients.delete(socket);
     redis.removeClient(socket.id);

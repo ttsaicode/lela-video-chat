@@ -46,7 +46,6 @@
     .muted { color: var(--text-muted); }
     .danger-text { color: #fca5a5; }
 
-    /* ---------------- HEADER ---------------- */
     header {
       height: 70px;
       display: flex;
@@ -140,7 +139,6 @@
 
     .btn-sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 6px; }
 
-    /* ---------------- MAIN CONTAINER ---------------- */
     .container {
       max-width: 1400px;
       width: 100%;
@@ -151,7 +149,6 @@
       gap: 24px;
     }
 
-    /* ---------------- STAT CARDS ---------------- */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -173,7 +170,6 @@
     .stat-value { font-size: 28px; font-weight: 800; color: #fff; }
     .stat-sub { font-size: 12px; color: var(--text-muted); }
 
-    /* ---------------- TABS ---------------- */
     .tabs {
       display: flex;
       gap: 10px;
@@ -202,7 +198,6 @@
       border: 1px solid rgba(124, 77, 255, 0.4);
     }
 
-    /* ---------------- PANELS ---------------- */
     .panel {
       display: none;
       background: var(--card-bg);
@@ -232,7 +227,6 @@
       line-height: 1.5;
     }
 
-    /* ---------------- TABLES ---------------- */
     .table-responsive {
       overflow-x: auto;
       border-radius: 10px;
@@ -276,7 +270,6 @@
     .tag-live      { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
     .tag-paused    { background: rgba(156, 163, 175, 0.15); color: #9ca3af; border: 1px solid rgba(156, 163, 175, 0.3); }
 
-    /* ---------------- FORMS ---------------- */
     .form-row {
       display: flex;
       gap: 12px;
@@ -350,7 +343,6 @@
     }
     .checkbox-row input { width: 16px; height: 16px; accent-color: var(--accent-purple); cursor: pointer; }
 
-    /* ---------------- AD PREVIEW / THUMBS ---------------- */
     .ad-thumb {
       width: 96px;
       height: 54px;
@@ -376,7 +368,6 @@
     #adFilePreview { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
     #adFilePreview:empty { display: none; }
 
-    /* ---------------- LOGIN OVERLAY ---------------- */
     .login-overlay {
       position: fixed;
       inset: 0;
@@ -434,7 +425,6 @@
       <h2>Moderation Portal</h2>
       <p>Enter your administrator credentials to access the live monitoring and moderation console.</p>
 
-      <!-- autocomplete="off" + new-password keeps browsers from re-filling after logout -->
       <form id="loginForm" class="login-form" autocomplete="off" novalidate>
         <div class="form-group">
           <label for="adminUsername">Admin Username / Email</label>
@@ -679,16 +669,9 @@
   </div>
 
   <script>
-    /* =====================================================================
-       STATE
-       NOTE: token lives in sessionStorage (not localStorage) so that closing
-       the tab/browser wipes the client copy immediately. The server copy is
-       killed on explicit logout and expires automatically ~90s after the
-       last heartbeat (i.e. shortly after the tab is closed).
-       ===================================================================== */
     const TOKEN_KEY    = "lela_admin_token";
-    const HEARTBEAT_MS = 20000;   // ping every 20s
-    const REFRESH_MS   = 8000;    // dashboard auto-refresh
+    const HEARTBEAT_MS = 20000;
+    const REFRESH_MS   = 8000;
 
     let adminToken     = sessionStorage.getItem(TOKEN_KEY);
     let isLoggedIn     = false;
@@ -701,9 +684,6 @@
     const bansCache    = new Map();
     const adsCache     = new Map();
 
-    /* =====================================================================
-       HELPERS
-       ===================================================================== */
     const $ = (id) => document.getElementById(id);
 
     function escapeHtml(value) {
@@ -738,9 +718,6 @@
       };
     }
 
-    /* =====================================================================
-       LOGIN OVERLAY / SESSION UI
-       ===================================================================== */
     function clearLoginForm() {
       const form = $("loginForm");
       form.reset();
@@ -751,8 +728,6 @@
       userEl.value = "";
       passEl.value = "";
 
-      // Chrome/Safari ignore autocomplete="off" for password fields.
-      // Temporarily marking them readonly stops the autofill repaint.
       userEl.setAttribute("readonly", "readonly");
       passEl.setAttribute("readonly", "readonly");
       setTimeout(() => {
@@ -794,10 +769,6 @@
       $("supabaseStatus").innerHTML = `<span class="dot amber"></span> Supabase: —`;
     }
 
-    /**
-     * Kills all client-side session state and shows the login screen.
-     * @param {string} message  optional notice shown under the form
-     */
     function showLoginOverlay(message) {
       stopHeartbeat();
       stopAutoRefresh();
@@ -813,9 +784,6 @@
       if (message) showLoginError(message, "#fbbf24");
     }
 
-    /* =====================================================================
-       AUTH
-       ===================================================================== */
     $("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -868,7 +836,6 @@
       stopHeartbeat();
       stopAutoRefresh();
 
-      // Wipe the UI + local state FIRST so nothing lingers if the network stalls
       adminToken = null;
       isLoggedIn = false;
       sessionStorage.removeItem(TOKEN_KEY);
@@ -876,14 +843,13 @@
       clearLoginForm();
       $("loginOverlay").style.display = "flex";
 
-      // Then tell the server to destroy the session record
       if (token) {
         try {
           await fetch("/api/admin/logout", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
           });
-        } catch (_) { /* server session will expire via TTL anyway */ }
+        } catch (_) { }
       }
 
       showLoginError("You have been signed out. Please sign in again.", "#9ca3af");
@@ -893,9 +859,6 @@
       showLoginOverlay("Your session has ended. Please sign in again.");
     }
 
-    /* ---------------- HEARTBEAT ----------------
-       Keeps the server-side session alive while the console is open.
-       When the tab closes, no more pings arrive and the token expires. */
     function startHeartbeat() {
       stopHeartbeat();
       heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_MS);
@@ -913,10 +876,9 @@
           headers: getAuthHeaders()
         });
         if (res.status === 401) sessionExpired();
-      } catch (_) { /* offline — let the server TTL handle it */ }
+      } catch (_) { }
     }
 
-    // Coming back from a throttled background tab: ping immediately
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible" && isLoggedIn) {
         sendHeartbeat();
@@ -924,12 +886,11 @@
       }
     });
 
-    /* ---------------- AUTO REFRESH ---------------- */
     function startAutoRefresh() {
       stopAutoRefresh();
       refreshTimer = setInterval(() => {
         if (!isLoggedIn) return;
-        if (document.visibilityState !== "visible") return; // don't hammer the DB in background
+        if (document.visibilityState !== "visible") return;
         fetchAdminData();
       }, REFRESH_MS);
     }
@@ -938,9 +899,6 @@
       if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
     }
 
-    /* =====================================================================
-       TABS  (fixed: no more reliance on the global `event`)
-       ===================================================================== */
     $("tabBar").addEventListener("click", (e) => {
       const btn = e.target.closest(".tab-btn");
       if (!btn) return;
@@ -956,13 +914,9 @@
       if (panel) panel.classList.add("active");
       currentTab = panelId;
 
-      // Lazy-load the panel you just opened
       if (panelId === "adsPanel" && isLoggedIn) fetchAds();
     }
 
-    /* =====================================================================
-       DATA FETCHING
-       ===================================================================== */
     async function fetchAdminData() {
       if (!adminToken || !isLoggedIn) return;
 
@@ -996,7 +950,6 @@
       }
     }
 
-    /* ---------------- REPORTS ---------------- */
     async function fetchReports() {
       if (!adminToken || !isLoggedIn) return;
       try {
@@ -1063,7 +1016,6 @@
       }
     });
 
-    /* ---------------- LIVE CONNECTIONS ---------------- */
     async function fetchLiveConnections() {
       if (!adminToken || !isLoggedIn) return;
       try {
@@ -1118,7 +1070,6 @@
       else if (btn.dataset.action === "ban-client") banClientIp(client.ip, "Kicked and banned by admin");
     });
 
-    /* ---------------- BANS ---------------- */
     async function fetchBans() {
       if (!adminToken || !isLoggedIn) return;
       try {
@@ -1163,9 +1114,6 @@
       unbanIp(btn.dataset.ip);
     });
 
-    /* =====================================================================
-       MODERATION ACTIONS
-       ===================================================================== */
     async function banReportedIp(reportId, ip, reason) {
       if (!confirm(`Are you sure you want to block IP ${ip}?`)) return;
       try {
@@ -1246,7 +1194,6 @@
       }
     }
 
-    /** POST helper that handles 401 centrally */
     async function adminPost(url, body) {
       const res = await fetch(url, {
         method: "POST",
@@ -1264,9 +1211,6 @@
       return res.json().catch(() => ({}));
     }
 
-    /* =====================================================================
-       ADS MANAGEMENT
-       ===================================================================== */
     $("adFile").addEventListener("change", (e) => {
       const file = e.target.files[0];
       const box = $("adFilePreview");
@@ -1378,7 +1322,6 @@
         if (file) fd.append("media", file);
         else fd.append("media_url", mediaUrl);
 
-        // NOTE: do NOT set Content-Type — the browser adds the multipart boundary
         const res = await fetch("/api/admin/ads", {
           method: "POST",
           headers: { "Authorization": `Bearer ${adminToken}` },
@@ -1426,15 +1369,10 @@
       }
     }
 
-    /* =====================================================================
-       BOOT
-       ===================================================================== */
     (function init() {
       clearLoginForm();
 
       if (adminToken) {
-        // NOTE: this only survives a page *reload*, because sessionStorage is
-        // cleared when the tab/window is closed.
         isLoggedIn = true;
         $("loginOverlay").style.display = "none";
         startHeartbeat();
