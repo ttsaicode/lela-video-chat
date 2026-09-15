@@ -467,7 +467,6 @@
   <!-- MAIN CONTAINER -->
   <div class="container">
 
-    <!-- STAT CARDS -->
     <div class="stats-grid">
       <div class="stat-card">
         <span class="stat-label">Online Clients</span>
@@ -501,7 +500,6 @@
       </div>
     </div>
 
-    <!-- TABS NAVIGATION -->
     <div class="tabs" id="tabBar">
       <button class="tab-btn active" data-panel="reportsPanel">🚩 Reports Queue (<span id="tabReportsCount">0</span>)</button>
       <button class="tab-btn" data-panel="usersPanel">👥 Connected Clients (<span id="tabUsersCount">0</span>)</button>
@@ -510,7 +508,7 @@
       <button class="tab-btn" data-panel="broadcastPanel">📢 Announcement Banner</button>
     </div>
 
-    <!-- PANEL 1: REPORTS QUEUE -->
+    <!-- REPORTS -->
     <div id="reportsPanel" class="panel active">
       <div class="panel-header">
         <h3 class="panel-title">User Violation Reports</h3>
@@ -535,7 +533,7 @@
       </div>
     </div>
 
-    <!-- PANEL 2: CONNECTED CLIENTS -->
+    <!-- CLIENTS -->
     <div id="usersPanel" class="panel">
       <div class="panel-header">
         <h3 class="panel-title">Active Live Connections</h3>
@@ -559,7 +557,7 @@
       </div>
     </div>
 
-    <!-- PANEL 3: BANNED IPS -->
+    <!-- BANS -->
     <div id="bansPanel" class="panel">
       <div class="panel-header">
         <h3 class="panel-title">Blocked IP Addresses</h3>
@@ -589,7 +587,7 @@
       </div>
     </div>
 
-    <!-- PANEL 4: SPONSORED ADS -->
+    <!-- ADS -->
     <div id="adsPanel" class="panel">
       <div class="panel-header">
         <h3 class="panel-title">Sponsored Ads</h3>
@@ -597,9 +595,9 @@
       </div>
 
       <p class="panel-hint">
-        Upload an image or a video (MP4/WebM, max 25 MB, no audio autoplay) or paste a hosted media URL.
-        Ads appear in a dismissible <strong>“Sponsored”</strong> card — bottom-right on desktop, slim bar below the video on mobile —
-        so they never cover the video call controls.
+        Upload an image or video (MP4/WebM, max 25 MB) or paste a hosted media URL.
+        Ads appear in a dismissible <strong>“Sponsored”</strong> card on the video chat page —
+        bottom-right floating card, in-flow card below the video, or top-right sidebar on desktop.
       </p>
 
       <form id="adForm" onsubmit="handleAdSubmit(event)">
@@ -613,7 +611,7 @@
           <select id="adPlacement" class="input-field">
             <option value="corner">Floating corner card (least intrusive)</option>
             <option value="below-video">Below video (in-flow, all devices)</option>
-            <option value="sidebar">Sidebar (desktop only)</option>
+            <option value="sidebar">Sidebar (desktop top-right)</option>
           </select>
         </div>
 
@@ -649,13 +647,13 @@
       </div>
     </div>
 
-    <!-- PANEL 5: BROADCAST -->
+    <!-- BROADCAST -->
     <div id="broadcastPanel" class="panel">
       <div class="panel-header">
         <h3 class="panel-title">Send Broadcast Announcement</h3>
       </div>
       <p class="panel-hint">
-        Publish a real-time banner alert to all active users currently connected to the chat platform.
+        Publish a real-time banner alert to all active users currently connected.
       </p>
 
       <form onsubmit="handleSendBroadcast(event)">
@@ -721,20 +719,16 @@
     function clearLoginForm() {
       const form = $("loginForm");
       form.reset();
-
       const userEl = $("adminUsername");
       const passEl = $("adminPassword");
-
       userEl.value = "";
       passEl.value = "";
-
       userEl.setAttribute("readonly", "readonly");
       passEl.setAttribute("readonly", "readonly");
       setTimeout(() => {
         userEl.removeAttribute("readonly");
         passEl.removeAttribute("readonly");
       }, 400);
-
       const errEl = $("loginError");
       errEl.textContent = "";
       errEl.style.display = "none";
@@ -748,16 +742,12 @@
     }
 
     function resetDashboard() {
-      ["statOnline", "statWaiting", "statPairs", "statReports", "statBans", "statAds"]
+      ["statOnline","statWaiting","statPairs","statReports","statBans","statAds"]
+        .forEach(id => { const el = $(id); if (el) el.textContent = "0"; });
+      ["tabReportsCount","tabUsersCount","tabBansCount","tabAdsCount"]
         .forEach(id => { const el = $(id); if (el) el.textContent = "0"; });
 
-      ["tabReportsCount", "tabUsersCount", "tabBansCount", "tabAdsCount"]
-        .forEach(id => { const el = $(id); if (el) el.textContent = "0"; });
-
-      reportsCache.clear();
-      clientsCache.clear();
-      bansCache.clear();
-      adsCache.clear();
+      reportsCache.clear(); clientsCache.clear(); bansCache.clear(); adsCache.clear();
 
       $("reportsTableBody").innerHTML = emptyRow(6, "Sign in to view reports.");
       $("usersTableBody").innerHTML   = emptyRow(5, "Sign in to view clients.");
@@ -772,25 +762,20 @@
     function showLoginOverlay(message) {
       stopHeartbeat();
       stopAutoRefresh();
-
       adminToken = null;
       isLoggedIn = false;
       sessionStorage.removeItem(TOKEN_KEY);
-
       resetDashboard();
       clearLoginForm();
       $("loginOverlay").style.display = "flex";
-
       if (message) showLoginError(message, "#fbbf24");
     }
 
     $("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const username = $("adminUsername").value.trim();
       const password = $("adminPassword").value;
       const submitBtn = e.target.querySelector('button[type="submit"]');
-
       $("loginError").style.display = "none";
 
       if (!username || !password) {
@@ -807,7 +792,6 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password })
         });
-
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "Login failed");
 
@@ -832,10 +816,8 @@
 
     async function logoutAdmin() {
       const token = adminToken;
-
       stopHeartbeat();
       stopAutoRefresh();
-
       adminToken = null;
       isLoggedIn = false;
       sessionStorage.removeItem(TOKEN_KEY);
@@ -849,9 +831,8 @@
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
           });
-        } catch (_) { }
+        } catch (_) {}
       }
-
       showLoginError("You have been signed out. Please sign in again.", "#9ca3af");
     }
 
@@ -863,11 +844,9 @@
       stopHeartbeat();
       heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_MS);
     }
-
     function stopHeartbeat() {
       if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     }
-
     async function sendHeartbeat() {
       if (!adminToken || !isLoggedIn) return;
       try {
@@ -876,7 +855,7 @@
           headers: getAuthHeaders()
         });
         if (res.status === 401) sessionExpired();
-      } catch (_) { }
+      } catch (_) {}
     }
 
     document.addEventListener("visibilitychange", () => {
@@ -894,7 +873,6 @@
         fetchAdminData();
       }, REFRESH_MS);
     }
-
     function stopAutoRefresh() {
       if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
     }
@@ -908,22 +886,18 @@
     function switchTab(panelId, btnEl) {
       document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
       document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-
       btnEl.classList.add("active");
       const panel = $(panelId);
       if (panel) panel.classList.add("active");
       currentTab = panelId;
-
       if (panelId === "adsPanel" && isLoggedIn) fetchAds();
     }
 
     async function fetchAdminData() {
       if (!adminToken || !isLoggedIn) return;
-
       try {
         const res = await fetch("/api/admin/stats", { headers: getAuthHeaders() });
         if (res.status === 401) return sessionExpired();
-
         const data = await res.json();
 
         $("statOnline").textContent  = data.onlineCount ?? 0;
@@ -936,7 +910,6 @@
         $("redisStatus").innerHTML = data.redisConnected
           ? `<span class="dot green"></span> Redis: Connected`
           : `<span class="dot amber"></span> Redis: In-Memory`;
-
         $("supabaseStatus").innerHTML = data.supabaseConnected
           ? `<span class="dot green"></span> Supabase: Connected`
           : `<span class="dot amber"></span> Supabase: In-Memory`;
@@ -945,9 +918,7 @@
         fetchLiveConnections();
         fetchBans();
         if (currentTab === "adsPanel") fetchAds();
-      } catch (err) {
-        console.error("Error fetching stats:", err);
-      }
+      } catch (err) { console.error("Error fetching stats:", err); }
     }
 
     async function fetchReports() {
@@ -955,12 +926,9 @@
       try {
         const res = await fetch("/api/admin/reports", { headers: getAuthHeaders() });
         if (res.status === 401) return sessionExpired();
-
         const data = await res.json();
         renderReports(Array.isArray(data.reports) ? data.reports : []);
-      } catch (err) {
-        console.error("Error fetching reports:", err);
-      }
+      } catch (err) { console.error("Error fetching reports:", err); }
     }
 
     function renderReports(reports) {
@@ -976,7 +944,6 @@
       tbody.innerHTML = reports.map(r => {
         const id = String(r.id);
         reportsCache.set(id, r);
-
         const status = String(r.status || "pending").toLowerCase();
         const reportedIp = r.reported_ip || "unknown";
         const canBan = reportedIp && reportedIp !== "unknown";
@@ -984,14 +951,8 @@
         return `
           <tr>
             <td>${escapeHtml(fmtTime(r.created_at))}</td>
-            <td>
-              <strong>Client #${escapeHtml(r.reported_id ?? "N/A")}</strong><br>
-              <small class="muted">${escapeHtml(reportedIp)}</small>
-            </td>
-            <td>
-              Client #${escapeHtml(r.reporter_id ?? "N/A")}<br>
-              <small class="muted">${escapeHtml(r.reporter_ip || "unknown")}</small>
-            </td>
+            <td><strong>Client #${escapeHtml(r.reported_id ?? "N/A")}</strong><br><small class="muted">${escapeHtml(reportedIp)}</small></td>
+            <td>Client #${escapeHtml(r.reporter_id ?? "N/A")}<br><small class="muted">${escapeHtml(r.reporter_ip || "unknown")}</small></td>
             <td><strong class="danger-text">${escapeHtml(r.reason || "—")}</strong></td>
             <td><span class="tag tag-${escapeHtml(status)}">${escapeHtml(status.toUpperCase())}</span></td>
             <td class="actions-cell">
@@ -1005,15 +966,10 @@
     $("reportsTableBody").addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-action]");
       if (!btn) return;
-      const id = btn.dataset.id;
-      const report = reportsCache.get(id);
+      const report = reportsCache.get(btn.dataset.id);
       if (!report) return;
-
-      if (btn.dataset.action === "ban-report") {
-        banReportedIp(id, report.reported_ip, report.reason);
-      } else if (btn.dataset.action === "dismiss-report") {
-        resolveReport(id, "dismissed");
-      }
+      if (btn.dataset.action === "ban-report") banReportedIp(btn.dataset.id, report.reported_ip, report.reason);
+      else if (btn.dataset.action === "dismiss-report") resolveReport(btn.dataset.id, "dismissed");
     });
 
     async function fetchLiveConnections() {
@@ -1021,11 +977,9 @@
       try {
         const res = await fetch("/api/admin/connections", { headers: getAuthHeaders() });
         if (res.status === 401) return sessionExpired();
-
         const data = await res.json();
         const clients = Array.isArray(data.clients) ? data.clients : [];
         const tbody = $("usersTableBody");
-
         clientsCache.clear();
         $("tabUsersCount").textContent = clients.length;
 
@@ -1037,12 +991,10 @@
         tbody.innerHTML = clients.map(c => {
           const id = String(c.id);
           clientsCache.set(id, c);
-
           const statusTag = c.isMatched
             ? '<span class="tag tag-reviewed">In Video Chat</span>'
             : (c.isReady ? '<span class="tag tag-pending">Waiting Match</span>'
                          : '<span class="tag tag-dismissed">Idle</span>');
-
           return `
             <tr>
               <td><strong>#${escapeHtml(id)}</strong></td>
@@ -1055,9 +1007,7 @@
               </td>
             </tr>`;
         }).join("");
-      } catch (err) {
-        console.error("Error fetching connections:", err);
-      }
+      } catch (err) { console.error("Error fetching connections:", err); }
     }
 
     $("usersTableBody").addEventListener("click", (e) => {
@@ -1065,7 +1015,6 @@
       if (!btn) return;
       const client = clientsCache.get(btn.dataset.id);
       if (!client) return;
-
       if (btn.dataset.action === "kick") kickClient(client.id);
       else if (btn.dataset.action === "ban-client") banClientIp(client.ip, "Kicked and banned by admin");
     });
@@ -1075,11 +1024,9 @@
       try {
         const res = await fetch("/api/admin/bans", { headers: getAuthHeaders() });
         if (res.status === 401) return sessionExpired();
-
         const data = await res.json();
         const bans = Array.isArray(data.bans) ? data.bans : [];
         const tbody = $("bansTableBody");
-
         bansCache.clear();
         $("tabBansCount").textContent = bans.length;
 
@@ -1091,7 +1038,6 @@
         tbody.innerHTML = bans.map(b => {
           const ip = String(b.ip);
           bansCache.set(ip, b);
-
           return `
             <tr>
               <td><strong><code>${escapeHtml(ip)}</code></strong></td>
@@ -1103,9 +1049,7 @@
               </td>
             </tr>`;
         }).join("");
-      } catch (err) {
-        console.error("Error fetching bans:", err);
-      }
+      } catch (err) { console.error("Error fetching bans:", err); }
     }
 
     $("bansTableBody").addEventListener("click", (e) => {
@@ -1120,18 +1064,14 @@
         await adminPost("/api/admin/ban", { ip, reason: `Report violation: ${reason}` });
         await resolveReport(reportId, "banned");
         fetchAdminData();
-      } catch (err) {
-        alert("Action failed: " + err.message);
-      }
+      } catch (err) { alert("Action failed: " + err.message); }
     }
 
     async function resolveReport(reportId, status) {
       try {
         await adminPost(`/api/admin/reports/${encodeURIComponent(reportId)}/status`, { status });
         fetchReports();
-      } catch (err) {
-        console.error("Error resolving report:", err);
-      }
+      } catch (err) { console.error("Error resolving report:", err); }
     }
 
     async function kickClient(clientId) {
@@ -1139,9 +1079,7 @@
       try {
         await adminPost("/api/admin/kick", { clientId });
         fetchAdminData();
-      } catch (err) {
-        alert("Kick failed: " + err.message);
-      }
+      } catch (err) { alert("Kick failed: " + err.message); }
     }
 
     async function banClientIp(ip, reason) {
@@ -1149,9 +1087,7 @@
       try {
         await adminPost("/api/admin/ban", { ip, reason });
         fetchAdminData();
-      } catch (err) {
-        alert("Ban failed: " + err.message);
-      }
+      } catch (err) { alert("Ban failed: " + err.message); }
     }
 
     async function unbanIp(ip) {
@@ -1159,9 +1095,7 @@
       try {
         await adminPost("/api/admin/unban", { ip });
         fetchAdminData();
-      } catch (err) {
-        alert("Unban failed: " + err.message);
-      }
+      } catch (err) { alert("Unban failed: " + err.message); }
     }
 
     async function handleManualBan(e) {
@@ -1169,29 +1103,23 @@
       const ip = $("banIpInput").value.trim();
       const reason = $("banReasonInput").value.trim();
       if (!ip || !reason) return;
-
       try {
         await adminPost("/api/admin/ban", { ip, reason });
         $("banIpInput").value = "";
         $("banReasonInput").value = "";
         fetchAdminData();
-      } catch (err) {
-        alert("Ban failed: " + err.message);
-      }
+      } catch (err) { alert("Ban failed: " + err.message); }
     }
 
     async function handleSendBroadcast(e) {
       e.preventDefault();
       const message = $("broadcastInput").value.trim();
       if (!message) return;
-
       try {
         await adminPost("/api/admin/broadcast", { message });
         alert("Broadcast announcement published to all active users!");
         $("broadcastInput").value = "";
-      } catch (err) {
-        alert("Broadcast failed: " + err.message);
-      }
+      } catch (err) { alert("Broadcast failed: " + err.message); }
     }
 
     async function adminPost(url, body) {
@@ -1200,10 +1128,7 @@
         headers: getAuthHeaders(),
         body: JSON.stringify(body)
       });
-      if (res.status === 401) {
-        sessionExpired();
-        throw new Error("Session expired");
-      }
+      if (res.status === 401) { sessionExpired(); throw new Error("Session expired"); }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Request failed (${res.status})`);
@@ -1216,7 +1141,6 @@
       const box = $("adFilePreview");
       box.innerHTML = "";
       if (!file) return;
-
       const url = URL.createObjectURL(file);
       const el = document.createElement(file.type.startsWith("video/") ? "video" : "img");
       el.src = url;
@@ -1231,18 +1155,14 @@
       try {
         const res = await fetch("/api/admin/ads", { headers: getAuthHeaders() });
         if (res.status === 401) return sessionExpired();
-
         const data = await res.json();
         renderAds(Array.isArray(data.ads) ? data.ads : []);
-      } catch (err) {
-        console.error("Error fetching ads:", err);
-      }
+      } catch (err) { console.error("Error fetching ads:", err); }
     }
 
     function renderAds(ads) {
       const tbody = $("adsTableBody");
       adsCache.clear();
-
       const liveCount = ads.filter(a => a.active).length;
       $("tabAdsCount").textContent = ads.length;
       $("statAds").textContent = liveCount;
@@ -1255,7 +1175,6 @@
       tbody.innerHTML = ads.map(ad => {
         const id = String(ad.id);
         adsCache.set(id, ad);
-
         const isVideo = ad.media_type === "video";
         const thumb = isVideo
           ? `<video class="ad-thumb" src="${escapeHtml(ad.media_url)}" muted playsinline preload="metadata"></video>`
@@ -1285,23 +1204,17 @@
       if (!btn) return;
       const ad = adsCache.get(btn.dataset.id);
       if (!ad) return;
-
       if (btn.dataset.action === "toggle-ad") toggleAd(ad.id, !ad.active);
       else if (btn.dataset.action === "delete-ad") deleteAd(ad.id, ad.title);
     });
 
     async function handleAdSubmit(e) {
       e.preventDefault();
-
       const fileInput = $("adFile");
       const file = fileInput.files[0];
       const mediaUrl = $("adMediaUrl").value.trim();
 
-      if (!file && !mediaUrl) {
-        alert("Please choose a media file or paste a media URL.");
-        return;
-      }
-
+      if (!file && !mediaUrl) { alert("Please choose a media file or paste a media URL."); return; }
       if (file && file.size > 25 * 1024 * 1024) {
         alert("File is larger than 25 MB. Please compress it or host it externally and paste the URL.");
         return;
@@ -1349,9 +1262,7 @@
       try {
         await adminPost(`/api/admin/ads/${encodeURIComponent(id)}/status`, { active });
         fetchAds();
-      } catch (err) {
-        alert("Update failed: " + err.message);
-      }
+      } catch (err) { alert("Update failed: " + err.message); }
     }
 
     async function deleteAd(id, title) {
@@ -1364,14 +1275,11 @@
         if (res.status === 401) return sessionExpired();
         if (!res.ok) throw new Error("Delete failed");
         fetchAds();
-      } catch (err) {
-        alert("Delete failed: " + err.message);
-      }
+      } catch (err) { alert("Delete failed: " + err.message); }
     }
 
     (function init() {
       clearLoginForm();
-
       if (adminToken) {
         isLoggedIn = true;
         $("loginOverlay").style.display = "none";
