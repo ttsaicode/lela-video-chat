@@ -13,8 +13,8 @@ const bcrypt = require("bcryptjs");
 const supabase = require("./lib/supabase.cjs");
 const redis = require("./lib/redis.cjs");
 
-// Runtime Port & Host configuration - MUST be 3000 per environment constraints
-const PORT = 3000;
+// Runtime Port & Host configuration
+const PORT = parseInt(process.env.PORT, 10) || 3000;
 const HOST = "0.0.0.0";
 
 const publicDir = path.join(__dirname, "public");
@@ -651,17 +651,7 @@ const server = http.createServer(async (req, res) => {
       }
       const adId = adDeleteMatch[1];
       const ad = await supabase.getAdById(adId);
-      if (!ad) return sendJson(404, { error: "Ad not found" });
-
-      // Clean up uploaded media safely
-      if (ad.media_url && ad.media_url.startsWith("/uploads/")) {
-        const safeBase = path.basename(ad.media_url);
-        const filePath = path.join(uploadsDir, safeBase);
-        if (fs.existsSync(filePath)) {
-          try { fs.unlinkSync(filePath); } catch (e) {}
-        }
-      }
-
+      // Per specification: Media files in uploads directory must be preserved and never deleted
       await supabase.deleteAd(adId);
       await supabase.logAction("AD_DELETE", { adId, title: ad.title }, admin.id, getClientIp(req));
       return sendJson(200, { success: true, message: "Ad deleted" });
@@ -952,6 +942,94 @@ const server = http.createServer(async (req, res) => {
       return sendJson(200, { success: true, admin: updated });
     }
 
+    // POST /api/admin/change-password - Change own password
+    if (requestPath === "/api/admin/change-password" && req.method === "POST") {
+      const { currentPassword, newPassword } = await parseJsonBody(req);
+      if (!currentPassword || !newPassword) {
+        return sendJson(400, { error: "Current password and new password are required" });
+      }
+      if (newPassword.length < 6) {
+        return sendJson(400, { error: "New password must be at least 6 characters" });
+      }
+
+      // Fetch user from DB/store
+      const user = await supabase.getAdminByUsername(admin.username);
+      let isMatch = false;
+      if (user && user.password_hash) {
+        isMatch = bcrypt.compareSync(currentPassword, user.password_hash);
+      } else if (admin.username === ADMIN_USERNAME && currentPassword === ADMIN_PASSWORD) {
+        isMatch = true;
+      }
+
+      if (!isMatch) {
+        return sendJson(401, { error: "Current password is incorrect" });
+      }
+
+      const salt = bcrypt.genSaltSync(10);
+      const newHash = bcrypt.hashSync(newPassword, salt);
+      const updatedUser = await supabase.updateAdminPassword(admin.id, newHash);
+      await supabase.logAction("PASSWORD_CHANGED", { username: admin.username, role: admin.role }, admin.id, getClientIp(req));
+      return sendJson(200, { success: true, message: "Password updated successfully" });
+    }
+
+    // DELETE /api/admin/users/:id - Superadmin delete account with safety measures
+    const userDeleteMatch = requestPath.match(/^\/api\/admin\/users\/([^/]+)$/);
+    if (userDeleteMatch && req.method === "DELETE") {
+      if (admin.role !== "superadmin") {
+        return sendJson(403, { error: "Superadmin role required to delete accounts." });
+      }
+      const targetId = userDeleteMatch[1];
+      const targetUser = await supabase.getAdminById(targetId);
+      if (!targetUser) {
+        return sendJson(404, { error: "Account not found" });
+      }
+
+      // Safety check 1: Cannot delete own account
+      if (targetUser.id === admin.id || targetUser.username.toLowerCase() === admin.username.toLowerCase()) {
+        return sendJson(400, { error: "Safety violation: You cannot delete your own logged-in account." });
+      }
+
+      // Safety check 2: Cannot delete root admin
+      if (targetUser.username.toLowerCase() === "admin" || targetUser.id === "admin-super-1") {
+        return sendJson(400, { error: "Safety violation: The root system administrator account cannot be deleted." });
+      }
+
+      // Safety check 3: Ensure there is at least one active superadmin remaining
+      if (targetUser.role === "superadmin") {
+        const allAdmins = await supabase.getAdmins();
+        const superadmins = allAdmins.filter(a => a.role === "superadmin" && a.id !== targetId);
+        if (superadmins.length === 0) {
+          return sendJson(400, { error: "Safety violation: Cannot delete the last remaining superadmin account." });
+        }
+      }
+
+      await supabase.deleteAdminAccount(targetId);
+      await supabase.logAction("ADMIN_DELETED", { targetId, username: targetUser.username, role: targetUser.role }, admin.id, getClientIp(req));
+      return sendJson(200, { success: true, message: `Account for ${targetUser.username} deleted successfully` });
+    }
+
+    // PUT /api/admin/users/:id/password - Superadmin reset staff password
+    const userPassMatch = requestPath.match(/^\/api\/admin\/users\/([^/]+)\/password$/);
+    if (userPassMatch && req.method === "PUT") {
+      if (admin.role !== "superadmin") {
+        return sendJson(403, { error: "Superadmin role required to reset passwords." });
+      }
+      const targetId = userPassMatch[1];
+      const { newPassword } = await parseJsonBody(req);
+      if (!newPassword || newPassword.length < 6) {
+        return sendJson(400, { error: "Password must be at least 6 characters" });
+      }
+      const targetUser = await supabase.getAdminById(targetId);
+      if (!targetUser) {
+        return sendJson(404, { error: "Account not found" });
+      }
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(newPassword, salt);
+      await supabase.updateAdminPassword(targetId, hash);
+      await supabase.logAction("ADMIN_PASSWORD_RESET", { targetId, username: targetUser.username }, admin.id, getClientIp(req));
+      return sendJson(200, { success: true, message: `Password reset for ${targetUser.username}` });
+    }
+
     // GET /api/admin/logs - System Audit Logs
     if (requestPath === "/api/admin/logs" && req.method === "GET") {
       if (!hasPermission(admin.role, "logs:read")) {
@@ -1219,8 +1297,8 @@ wss.on("connection", async (socket, request) => {
   redis.trackClient(socket.id, socket.ip);
   broadcastOnlineCount();
 
-  // If active announcement has maintenance lockout, immediately lock this connection
-  if (activeAnnouncement && activeAnnouncement.lockout) {
+  // If active announcement exists (lockout or banner notice), immediately send to this connection
+  if (activeAnnouncement) {
     send(socket, {
       type: "system_announcement",
       announcement: activeAnnouncement

@@ -841,6 +841,23 @@ async function handleSignalingMessage(message) {
   }
 }
 
+let broadcastBannerTimer = null;
+
+function handleBroadcast(text, persistent = false) {
+  if (!broadcastBanner || !broadcastMessage) return;
+  broadcastMessage.textContent = text;
+  broadcastBanner.classList.add("show");
+  if (broadcastBannerTimer) {
+    clearTimeout(broadcastBannerTimer);
+    broadcastBannerTimer = null;
+  }
+  if (!persistent) {
+    broadcastBannerTimer = setTimeout(() => {
+      broadcastBanner.classList.remove("show");
+    }, 10000);
+  }
+}
+
 function handleSystemAnnouncement(announcement) {
   if (!announcement) {
     handleAnnouncementCleared();
@@ -851,12 +868,15 @@ function handleSystemAnnouncement(announcement) {
     applyMaintenanceLockout(announcement.title, announcement.message);
   } else {
     removeMaintenanceLockout();
-    handleBroadcast(`${announcement.title ? announcement.title + ': ' : ''}${announcement.message}`);
+    handleBroadcast(`${announcement.title ? announcement.title + ': ' : ''}${announcement.message}`, true);
   }
 }
 
 function handleAnnouncementCleared() {
   removeMaintenanceLockout();
+  if (broadcastBanner) {
+    broadcastBanner.classList.remove("show");
+  }
 }
 
 function handleMaintenanceLockout(customMsg) {

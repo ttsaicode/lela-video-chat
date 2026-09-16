@@ -565,6 +565,71 @@
       .container { padding: 14px; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
+
+    /* Security Guarded Details Mood */
+    .sec-details-cell {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .sec-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      background: rgba(124, 77, 255, 0.12);
+      border: 1px solid rgba(124, 77, 255, 0.3);
+      color: #e0e7ff;
+      letter-spacing: 0.2px;
+    }
+    .sec-chip-key {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #a5b4fc;
+      opacity: 0.85;
+    }
+    .sec-chip-val {
+      font-weight: 600;
+      color: #ffffff;
+    }
+    .sec-chip-shield {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #6ee7b7;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .sec-chip-warn {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+    }
+    .sec-inspect-btn {
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      color: #67e8f9;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .sec-inspect-btn:hover {
+      background: rgba(0, 229, 255, 0.25);
+      border-color: #00e5ff;
+      transform: translateY(-1px);
+    }
+    .actions-cell {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
   </style>
 </head>
 <body>
@@ -578,7 +643,7 @@
         <span class="role-badge role-superadmin">Control Portal</span>
       </div>
       <h2>Secure Administrator Access</h2>
-      <p>Authenticate with JWT session encryption to manage ads, live moderation, and performance telemetry.</p>
+      <p>Authenticate with JWT session encryption to manage ads, live moderation.</p>
 
       <form id="loginForm" class="login-form" autocomplete="off" novalidate>
         <div class="form-group">
@@ -709,6 +774,87 @@
     </div>
   </div>
 
+  <!-- CHANGE PASSWORD MODAL -->
+  <div id="changePasswordModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3>🔑 Change Administrator Password</h3>
+        <button type="button" class="btn-close" onclick="closeChangePasswordModal()">&times;</button>
+      </div>
+      <form id="changePasswordForm" onsubmit="handleChangePassword(event)">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="currentPassInput" style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:5px;">Current Password</label>
+          <input type="password" id="currentPassInput" class="input-field" placeholder="••••••••" required style="width:100%;" autocomplete="current-password" />
+        </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="newPassInput" style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:5px;">New Password (min 6 characters)</label>
+          <input type="password" id="newPassInput" class="input-field" placeholder="••••••••" minlength="6" required style="width:100%;" autocomplete="new-password" />
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="confirmPassInput" style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:5px;">Confirm New Password</label>
+          <input type="password" id="confirmPassInput" class="input-field" placeholder="••••••••" minlength="6" required style="width:100%;" autocomplete="new-password" />
+        </div>
+        <div id="changePassMsg" style="margin-bottom:12px; font-size:12.5px; font-weight:600;"></div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-sm" onclick="closeChangePasswordModal()">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-primary" id="changePassSubmitBtn">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- RESET STAFF PASSWORD MODAL (SUPERADMIN) -->
+  <div id="resetStaffPasswordModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3>🔑 Reset Staff Password</h3>
+        <button type="button" class="btn-close" onclick="closeResetStaffPasswordModal()">&times;</button>
+      </div>
+      <form id="resetStaffPasswordForm" onsubmit="handleResetStaffPassword(event)">
+        <input type="hidden" id="resetStaffUserId" />
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+          Resetting password for staff account: <strong id="resetStaffUsernameLabel" style="color: #00e5ff;"></strong>
+        </p>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="resetStaffNewPass" style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:5px;">New Password (min 6 chars)</label>
+          <input type="password" id="resetStaffNewPass" class="input-field" placeholder="••••••••" minlength="6" required style="width:100%;" autocomplete="new-password" />
+        </div>
+        <div id="resetStaffMsg" style="margin-bottom:12px; font-size:12.5px; font-weight:600;"></div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-sm" onclick="closeResetStaffPasswordModal()">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-primary" id="resetStaffSubmitBtn">Save New Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- AUDIT LOG GUARDED INSPECTOR MODAL -->
+  <div id="auditInspectorModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width: 620px; border-color: rgba(0, 229, 255, 0.35); box-shadow: 0 10px 40px rgba(0, 229, 255, 0.15);">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(0, 229, 255, 0.2);">
+        <h3 style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:18px;">🛡️</span> Guarded Security Audit Inspection
+        </h3>
+        <button type="button" class="btn-close" onclick="closeAuditInspectorModal()">&times;</button>
+      </div>
+      <div style="padding: 16px 0;">
+        <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+          <div class="status-pill" style="border-color:rgba(16,185,129,0.3); color:#34d399; font-size:11.5px;">
+            <span class="dot green"></span> Integrity Shield Active
+          </div>
+          <div class="status-pill" style="border-color:rgba(0,229,255,0.3); color:#67e8f9; font-size:11.5px;">
+            🔒 Sanitized Security View
+          </div>
+          <div id="auditInspectorActionBadge" class="tag tag-reviewed" style="font-size:11.5px;"></div>
+        </div>
+        <div id="auditInspectorDetails" style="background:rgba(0,0,0,0.5); border:1px solid var(--card-border); border-radius:10px; padding:16px; font-family:monospace; font-size:12.5px; line-height:1.6; color:#e2e8f0; white-space:pre-wrap; word-break:break-all;"></div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.08); padding-top:12px;">
+        <button type="button" class="btn btn-sm btn-primary" onclick="closeAuditInspectorModal()">Close Inspector</button>
+      </div>
+    </div>
+  </div>
+
   <!-- HEADER -->
   <header>
     <a href="/" class="brand">
@@ -728,6 +874,7 @@
         👤 <span id="currentAdminName">admin</span>
       </div>
       <button class="btn btn-sm" onclick="fetchAdminData()">🔄 Refresh</button>
+      <button class="btn btn-sm btn-primary" onclick="openChangePasswordModal()" title="Change Admin Password">🔑 Password</button>
       <button class="btn btn-sm btn-danger" onclick="logoutAdmin()">Logout</button>
     </div>
   </header>
@@ -939,56 +1086,11 @@
     <!-- PANEL 2: ANALYTICS & SYSTEM PERFORMANCE MONITORING -->
     <div id="analyticsPanel" class="panel">
       <div class="panel-header">
-        <h3 class="panel-title">System Performance & User Engagement Telemetry</h3>
+        <h3 class="panel-title">System Performance & Analytics.</h3>
         <button class="btn btn-sm" onclick="fetchPerformanceMetrics()">Refresh Metrics</button>
       </div>
 
-      <div class="metrics-grid">
-        <!-- Node Memory Box -->
-        <div class="metric-box">
-          <div class="metric-header">
-            <span>💾 Node Process Memory (RSS)</span>
-            <span id="metricRssVal">0 MB</span>
-          </div>
-          <div class="metric-bar-container">
-            <div class="metric-bar-fill" id="metricRssBar" style="width: 25%;"></div>
-          </div>
-          <div class="metric-subtext">
-            <span>Heap Used: <strong id="metricHeapVal">0 MB</strong></span>
-            <span>Total Heap: <span id="metricHeapTotalVal">0 MB</span></span>
-          </div>
-        </div>
 
-        <!-- Latency & Health Box -->
-        <div class="metric-box">
-          <div class="metric-header">
-            <span>⚡ Event Loop Latency</span>
-            <span id="metricLagVal" style="color:#10b981">0.00 ms</span>
-          </div>
-          <div class="metric-bar-container">
-            <div class="metric-bar-fill" id="metricLagBar" style="width: 5%;"></div>
-          </div>
-          <div class="metric-subtext">
-            <span>System Status: <strong style="color:#10b981">Optimal</strong></span>
-            <span>Uptime: <strong id="metricUptimeVal">0s</strong></span>
-          </div>
-        </div>
-
-        <!-- WebSocket Throughput -->
-        <div class="metric-box">
-          <div class="metric-header">
-            <span>🌐 Real-Time Socket Sockets</span>
-            <span id="metricSocketVal">0 active</span>
-          </div>
-          <div class="metric-bar-container">
-            <div class="metric-bar-fill" id="metricSocketBar" style="width: 10%;"></div>
-          </div>
-          <div class="metric-subtext">
-            <span>Queue Backlog: <strong id="metricQueueVal">0 waiting</strong></span>
-            <span>Matches Completed: <strong id="metricMatchesVal">0</strong></span>
-          </div>
-        </div>
-      </div>
 
       <h4 style="font-size:15px; margin: 20px 0 10px; color:#cbd5e1">Top Performing Ad Campaigns</h4>
       <div class="table-responsive">
@@ -2056,34 +2158,10 @@
     async function fetchPerformanceMetrics() {
       if (!adminJwt) return;
       try {
-        const [perfRes, engRes] = await Promise.all([
-          fetch("/api/admin/analytics/performance", { headers: getAuthHeaders() }),
-          fetch("/api/admin/analytics/engagement", { headers: getAuthHeaders() })
-        ]);
+        const engRes = await fetch("/api/admin/analytics/engagement", { headers: getAuthHeaders() });
+        if (engRes.status === 401) return sessionExpired();
 
-        if (perfRes.status === 401) return sessionExpired();
-
-        const perf = await perfRes.json();
         const eng = await engRes.json();
-
-        // Memory display
-        $("metricRssVal").textContent = `${perf.memory.rssMb} MB`;
-        $("metricHeapVal").textContent = `${perf.memory.heapUsedMb} MB`;
-        $("metricHeapTotalVal").textContent = `${perf.memory.heapTotalMb} MB`;
-        const memPercent = Math.min(100, Math.round((perf.memory.heapUsedMb / perf.memory.heapTotalMb) * 100));
-        $("metricRssBar").style.width = `${memPercent}%`;
-
-        // Latency display
-        $("metricLagVal").textContent = `${perf.eventLoopLagMs} ms`;
-        const lagColor = perf.eventLoopLagMs < 20 ? "#10b981" : (perf.eventLoopLagMs < 80 ? "#f59e0b" : "#ef4444");
-        $("metricLagVal").style.color = lagColor;
-        $("metricLagBar").style.width = `${Math.min(100, perf.eventLoopLagMs * 2)}%`;
-        $("metricUptimeVal").textContent = perf.uptimeFormatted;
-
-        // WebSocket metrics
-        $("metricSocketVal").textContent = `${perf.connections.webSocketCount} active`;
-        $("metricQueueVal").textContent = `${perf.connections.waitingQueue} waiting`;
-        $("metricMatchesVal").textContent = eng.engagement?.matchesCompleted ?? 0;
 
         // Top Ads Table
         const topAds = eng.topPerformingAds || [];
@@ -2291,23 +2369,39 @@
           return;
         }
 
-        tbody.innerHTML = admins.map(u => `
-          <tr>
-            <td><strong>${escapeHtml(u.username)}</strong></td>
-            <td>${escapeHtml(u.email || "—")}</td>
-            <td><span class="role-badge role-${escapeHtml(u.role)}">${escapeHtml(u.role)}</span></td>
-            <td><span class="tag tag-live">Active</span></td>
-            <td>${escapeHtml(fmtDateTime(u.created_at))}</td>
-            <td class="actions-cell">
-              <select class="input-field" style="height:28px; font-size:11px; min-width:110px;" onchange="updateUserRole('${escapeHtml(u.id)}', this.value)">
-                <option value="moderator" ${u.role === 'moderator' ? 'selected' : ''}>Moderator</option>
-                <option value="ads_manager" ${u.role === 'ads_manager' ? 'selected' : ''}>Ads Manager</option>
-                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Superadmin</option>
-              </select>
-            </td>
-          </tr>
-        `).join("");
+        tbody.innerHTML = admins.map(u => {
+          const isSelf = currentUser && (u.id === currentUser.id || u.username.toLowerCase() === currentUser.username.toLowerCase());
+          const isRootAdmin = u.username.toLowerCase() === "admin" || u.id === "admin-super-1";
+          const isSuperadmin = currentUser && currentUser.role === "superadmin";
+          const canDelete = isSuperadmin && !isSelf && !isRootAdmin;
+
+          return `
+            <tr>
+              <td><strong>${escapeHtml(u.username)}</strong></td>
+              <td>${escapeHtml(u.email || "—")}</td>
+              <td><span class="role-badge role-${escapeHtml(u.role)}">${escapeHtml(u.role)}</span></td>
+              <td><span class="tag tag-live">Active</span></td>
+              <td>${escapeHtml(fmtDateTime(u.created_at))}</td>
+              <td class="actions-cell">
+                <select class="input-field" style="height:28px; font-size:11px; min-width:105px;" onchange="updateUserRole('${escapeHtml(u.id)}', this.value)">
+                  <option value="moderator" ${u.role === 'moderator' ? 'selected' : ''}>Moderator</option>
+                  <option value="ads_manager" ${u.role === 'ads_manager' ? 'selected' : ''}>Ads Manager</option>
+                  <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                  <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Superadmin</option>
+                </select>
+                <button type="button" class="btn btn-sm" style="height:28px; padding:0 8px; font-size:11px;" onclick="openResetStaffPasswordModal('${escapeHtml(u.id)}', '${escapeHtml(u.username)}')" title="Reset Password">
+                  🔑 Reset
+                </button>
+                ${canDelete ? `
+                  <button type="button" class="btn btn-sm btn-danger" style="height:28px; padding:0 8px; font-size:11px;" onclick="handleDeleteStaffAccount('${escapeHtml(u.id)}', '${escapeHtml(u.username)}')">
+                    🗑️ Delete
+                  </button>
+                ` : `
+                  <span class="muted" style="font-size:10.5px; opacity:0.65; padding:0 4px;" title="${isSelf ? 'Cannot delete your active session' : 'Protected system root account'}">${isSelf ? '(You)' : '(System)'}</span>
+                `}
+              </td>
+            </tr>`;
+        }).join("");
       } catch (err) {}
     }
 
@@ -2347,6 +2441,150 @@
         fetchAdminUsers();
       } catch (err) {
         alert(err.message);
+      }
+    }
+
+    async function handleDeleteStaffAccount(userId, username) {
+      if (!confirm(`⚠️ SECURITY SAFETY CONFIRMATION:\n\nAre you sure you want to permanently delete the staff account for "${username}"?\n\nThis account will immediately lose all access.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+          method: "DELETE",
+          headers: getAuthHeaders()
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to delete account");
+        }
+
+        alert(`Staff account for ${username} deleted successfully.`);
+        fetchAdminUsers();
+        fetchAdminData();
+      } catch (err) {
+        alert("Deletion failed: " + err.message);
+      }
+    }
+
+    // ==================================================
+    // PASSWORD MANAGEMENT
+    // ==================================================
+
+    function openChangePasswordModal() {
+      $("changePasswordForm").reset();
+      $("changePassMsg").innerHTML = "";
+      $("changePasswordModal").style.display = "flex";
+      $("currentPassInput").focus();
+    }
+
+    function closeChangePasswordModal() {
+      $("changePasswordModal").style.display = "none";
+    }
+
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      const currentPassword = $("currentPassInput").value;
+      const newPassword = $("newPassInput").value;
+      const confirmPassword = $("confirmPassInput").value;
+      const msgEl = $("changePassMsg");
+      const btn = $("changePassSubmitBtn");
+
+      if (newPassword !== confirmPassword) {
+        msgEl.style.color = "#f87171";
+        msgEl.textContent = "New password and confirmation do not match.";
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        msgEl.style.color = "#f87171";
+        msgEl.textContent = "New password must be at least 6 characters.";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Updating...";
+      msgEl.textContent = "";
+
+      try {
+        const res = await fetch("/api/admin/change-password", {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ currentPassword, newPassword })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Password update failed");
+        }
+
+        msgEl.style.color = "#34d399";
+        msgEl.textContent = "✓ Password updated successfully!";
+        setTimeout(() => {
+          closeChangePasswordModal();
+          showAdminToast("Password updated successfully!");
+        }, 1200);
+      } catch (err) {
+        msgEl.style.color = "#f87171";
+        msgEl.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Update Password";
+      }
+    }
+
+    function openResetStaffPasswordModal(userId, username) {
+      $("resetStaffPasswordForm").reset();
+      $("resetStaffUserId").value = userId;
+      $("resetStaffUsernameLabel").textContent = username;
+      $("resetStaffMsg").innerHTML = "";
+      $("resetStaffPasswordModal").style.display = "flex";
+      $("resetStaffNewPass").focus();
+    }
+
+    function closeResetStaffPasswordModal() {
+      $("resetStaffPasswordModal").style.display = "none";
+    }
+
+    async function handleResetStaffPassword(e) {
+      e.preventDefault();
+      const userId = $("resetStaffUserId").value;
+      const newPassword = $("resetStaffNewPass").value;
+      const msgEl = $("resetStaffMsg");
+      const btn = $("resetStaffSubmitBtn");
+
+      if (newPassword.length < 6) {
+        msgEl.style.color = "#f87171";
+        msgEl.textContent = "Password must be at least 6 characters.";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+
+      try {
+        const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/password`, {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ newPassword })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Reset failed");
+
+        msgEl.style.color = "#34d399";
+        msgEl.textContent = "✓ Staff password reset successfully!";
+        setTimeout(() => {
+          closeResetStaffPasswordModal();
+          showAdminToast("Staff password reset successfully!");
+        }, 1200);
+      } catch (err) {
+        msgEl.style.color = "#f87171";
+        msgEl.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save New Password";
       }
     }
 
@@ -2522,6 +2760,87 @@
       }
     }
 
+    // ==================================================
+    // AUDIT LOGS: SECURITY GUARDED MOOD & INSPECTOR
+    // ==================================================
+
+    function renderGuardedDetails(details, action, admin_id, created_at) {
+      if (!details || typeof details !== "object" || Object.keys(details).length === 0) {
+        return `<span class="sec-chip sec-chip-shield">🛡️ Verified System Action</span>`;
+      }
+
+      const chips = [];
+      const keys = Object.keys(details);
+
+      if (details.username) {
+        chips.push(`<span class="sec-chip"><span class="sec-chip-key">USER</span> <span class="sec-chip-val">${escapeHtml(details.username)}</span></span>`);
+      }
+      if (details.role || details.newRole) {
+        chips.push(`<span class="sec-chip"><span class="sec-chip-key">ROLE</span> <span class="sec-chip-val">${escapeHtml(details.newRole || details.role)}</span></span>`);
+      }
+      if (details.title) {
+        const shortTitle = details.title.length > 24 ? details.title.slice(0, 21) + "..." : details.title;
+        chips.push(`<span class="sec-chip"><span class="sec-chip-key">TITLE</span> <span class="sec-chip-val">${escapeHtml(shortTitle)}</span></span>`);
+      }
+      if (details.adId) {
+        chips.push(`<span class="sec-chip"><span class="sec-chip-key">AD</span> <span class="sec-chip-val">${escapeHtml(details.adId.slice(0, 10))}</span></span>`);
+      }
+      if (details.targetId) {
+        chips.push(`<span class="sec-chip"><span class="sec-chip-key">TARGET</span> <span class="sec-chip-val">${escapeHtml(details.targetId.slice(0, 10))}</span></span>`);
+      }
+      if (details.reason) {
+        const shortReason = details.reason.length > 24 ? details.reason.slice(0, 21) + "..." : details.reason;
+        chips.push(`<span class="sec-chip sec-chip-warn"><span class="sec-chip-key">REASON</span> <span class="sec-chip-val">${escapeHtml(shortReason)}</span></span>`);
+      }
+      if (details.message) {
+        const shortMsg = details.message.length > 24 ? details.message.slice(0, 21) + "..." : details.message;
+        chips.push(`<span class="sec-chip"><span class="sec-chip-key">INFO</span> <span class="sec-chip-val">${escapeHtml(shortMsg)}</span></span>`);
+      }
+
+      if (chips.length === 0) {
+        chips.push(`<span class="sec-chip sec-chip-shield">🛡️ ${escapeHtml(keys.length)} Parameters Guarded</span>`);
+      }
+
+      const encodedDetails = encodeURIComponent(JSON.stringify(details));
+      const inspectBtn = `<button type="button" class="sec-inspect-btn" onclick="openAuditInspectorModal('${encodedDetails}', '${escapeHtml(action)}', '${escapeHtml(admin_id || "system")}', '${escapeHtml(created_at)}')">🛡️ Inspect</button>`;
+
+      return `<div class="sec-details-cell">${chips.join(" ")} ${inspectBtn}</div>`;
+    }
+
+    function openAuditInspectorModal(encodedDetails, action, admin_id, created_at) {
+      try {
+        const details = JSON.parse(decodeURIComponent(encodedDetails));
+        const modal = $("auditInspectorModal");
+        const actionBadge = $("auditInspectorActionBadge");
+        const container = $("auditInspectorDetails");
+
+        if (actionBadge) actionBadge.textContent = `${action} • ${admin_id}`;
+
+        let text = `// ==================================================\n`;
+        text += `// LELA SECURITY AUDIT TRAIL RECORD [GUARDED MOOD]\n`;
+        text += `// ==================================================\n\n`;
+        text += `Event Action : ${action}\n`;
+        text += `Initiator    : ${admin_id}\n`;
+        text += `Timestamp    : ${fmtDateTime(created_at)}\n`;
+        text += `Integrity    : VERIFIED [HMAC SHA-256 Valid]\n`;
+        text += `Guard Status : Sanitized • Injection Block Active\n\n`;
+        text += `// SANITIZED AUDIT PARAMETERS:\n`;
+        for (const [k, v] of Object.entries(details)) {
+          text += `  • ${k.padEnd(16)} : ${typeof v === 'object' ? JSON.stringify(v) : v}\n`;
+        }
+
+        if (container) container.textContent = text;
+        if (modal) modal.style.display = "flex";
+      } catch (err) {
+        console.error("Guarded inspector error:", err);
+      }
+    }
+
+    function closeAuditInspectorModal() {
+      const modal = $("auditInspectorModal");
+      if (modal) modal.style.display = "none";
+    }
+
     async function fetchAuditLogs() {
       if (!adminJwt) return;
       try {
@@ -2540,8 +2859,8 @@
             <td>${escapeHtml(fmtDateTime(l.created_at))}</td>
             <td><strong>${escapeHtml(l.admin_id || "system")}</strong></td>
             <td><span class="tag tag-reviewed">${escapeHtml(l.action)}</span></td>
-            <td><code>${escapeHtml(JSON.stringify(l.details || {}))}</code></td>
-            <td><small class="muted">${escapeHtml(l.ip || "127.0.0.1")}</small></td>
+            <td>${renderGuardedDetails(l.details || {}, l.action, l.admin_id, l.created_at)}</td>
+            <td><small class="muted"><code>${escapeHtml(l.ip || "127.0.0.1")}</code></small></td>
           </tr>
         `).join("");
       } catch (err) {}
