@@ -187,8 +187,35 @@ function isMobileOrCompressedViewport() {
 }
 
 function hideAllAds() {
-  if (adContainer) adContainer.classList.remove("show");
+  if (adContainer) adContainer.classList.remove("show", "stranger-overlay", "below-video", "corner");
   if (strangerAdSlot) strangerAdSlot.classList.remove("show");
+}
+
+function placeAdContainer(placement) {
+  if (!adContainer) return;
+  const videoGrid = document.getElementById("videoGrid");
+  const mainContainer = videoGrid ? videoGrid.parentElement : null;
+  adContainer.classList.remove("stranger-overlay", "below-video", "corner");
+
+  if (placement === "stranger-overlay" && strangerAdSlot) {
+    strangerAdSlot.appendChild(adContainer);
+    strangerAdSlot.classList.add("show");
+    adContainer.classList.add("stranger-overlay");
+    return;
+  }
+
+  if (strangerAdSlot) strangerAdSlot.classList.remove("show");
+
+  if (placement === "corner") {
+    document.body.appendChild(adContainer);
+    adContainer.classList.add("corner");
+    return;
+  }
+
+  if (mainContainer && videoGrid) {
+    mainContainer.insertBefore(adContainer, videoGrid.nextSibling);
+  }
+  adContainer.classList.add("below-video");
 }
 
 async function initAdsEngine() {
@@ -254,20 +281,10 @@ function renderCurrentAd() {
   // Track impression to backend telemetry
   fetch(`/api/ads/${encodeURIComponent(ad.id)}/impression`, { method: "POST" }).catch(() => {});
 
-  // Mount into the adContainer:
-  // - On Desktop: Fixed at bottom-left
-  // - On Responsive: Styled below from both video layouts
   if (adContainer && adCard) {
-    if (adCard.parentElement !== adContainer) {
-      adContainer.appendChild(adCard);
-    }
-    adContainer.className = "sponsored-banner-container show";
-    if (isMobile) {
-      adContainer.classList.add("responsive-below-videos");
-    }
-  }
-  if (strangerAdSlot) {
-    strangerAdSlot.classList.remove("show");
+    if (adCard.parentElement !== adContainer) adContainer.appendChild(adCard);
+    placeAdContainer(ad.placement || adSettings.defaultPlacement || "below-video");
+    adContainer.classList.add("show");
   }
 
   // Title
@@ -311,9 +328,19 @@ function renderCurrentAd() {
       vid.src = ad.media_url;
       vid.autoplay = true;
       vid.muted = true;
-      vid.loop = true;
+      vid.loop = false;
       vid.playsInline = true;
+      vid.preload = "auto";
+      vid.onended = () => {
+        if (activeAdsList.length > 1 && !adDismissed) {
+          if (adRotationTimer) clearTimeout(adRotationTimer);
+          currentAdIndex = (currentAdIndex + 1) % activeAdsList.length;
+          renderCurrentAd();
+          scheduleNextAd();
+        }
+      };
       adMediaSlot.appendChild(vid);
+      vid.play().catch(() => {});
     } else {
       const img = document.createElement("img");
       img.className = "sponsored-media";
@@ -973,15 +1000,6 @@ function handleBanned(reason) {
   if (reasonText) reasonText.textContent = reason || "Access suspended by moderation.";
   if (modal) modal.classList.add("show");
   setStatus("Access suspended.");
-}
-
-function handleBroadcast(text) {
-  if (!broadcastBanner || !broadcastMessage) return;
-  broadcastMessage.textContent = `📢 ${text}`;
-  broadcastBanner.classList.add("show");
-  setTimeout(() => {
-    broadcastBanner.classList.remove("show");
-  }, 7000);
 }
 
 function stopVideoChat() {

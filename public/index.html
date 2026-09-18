@@ -406,135 +406,55 @@
     .send-button:hover { background: var(--accent-purple-hover); }
 
     /* ---------------- SPONSORED ADS COMPONENT (ADMIN-CONTROLLED) ---------------- */
-
-    /* Desktop: Ads card placed firmly on BOTTOM LEFT */
     .sponsored-banner-container {
-      position: fixed;
-      bottom: 86px;
-      left: 20px;
-      width: auto;
-      max-width: 380px;
-      display: none;
-      align-items: center;
-      justify-content: flex-start;
-      z-index: 35;
+      position: fixed; bottom: 86px; left: 20px; width: auto; max-width: 420px;
+      display: none; align-items: center; justify-content: flex-start; z-index: 35;
       pointer-events: auto;
-      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-
-    .sponsored-banner-container.show {
-      display: flex;
-    }
-
+    .sponsored-banner-container.show { display: flex; }
     .sponsored-card {
-      width: 100%;
-      max-width: 380px;
-      background: rgba(13, 17, 34, 0.94);
-      border: 1px solid rgba(124, 77, 255, 0.38);
-      border-radius: 12px;
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
-      position: relative;
-      overflow: hidden;
+      width: 100%; max-width: 420px; background: rgba(13,17,34,.96);
+      border: 1px solid rgba(124,77,255,.38); border-radius: 12px; padding: 10px 12px;
+      display: flex; align-items: center; gap: 12px; backdrop-filter: blur(16px);
+      box-shadow: 0 8px 26px rgba(0,0,0,.55); position: relative; overflow: hidden;
     }
-
-    .sponsored-badge {
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.6px;
-      text-transform: uppercase;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: rgba(124, 77, 255, 0.25);
-      border: 1px solid rgba(124, 77, 255, 0.45);
-      color: #c4b5fd;
-      white-space: nowrap;
+    .sponsored-banner-container.stranger-overlay {
+      position: absolute; top: 12px; right: 12px; bottom: auto; left: auto;
+      width: min(74%, 300px); max-width: 300px; z-index: 12;
     }
-
-    .sponsored-media {
-      width: 64px;
-      height: 40px;
-      border-radius: 8px;
-      object-fit: cover;
-      border: 1px solid var(--card-border);
-      background: #080a14;
-      flex-shrink: 0;
+    .sponsored-banner-container.stranger-overlay .sponsored-card {
+      display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto auto;
+      width: 100%; max-width: none; padding: 9px; gap: 6px 8px;
     }
-
-    .sponsored-content {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+    .sponsored-banner-container.stranger-overlay .sponsored-badge { grid-column:1; grid-row:1; }
+    .sponsored-banner-container.stranger-overlay #sponsoredMediaSlot { grid-column:1 / -1; grid-row:2; }
+    .sponsored-banner-container.stranger-overlay .sponsored-content { grid-column:1; grid-row:3; }
+    .sponsored-banner-container.stranger-overlay .sponsored-close { grid-column:2; grid-row:1; }
+    .sponsored-banner-container.stranger-overlay .sponsored-media {
+      width: 100%; height: 118px; max-height: 26vh; display: block; object-fit: cover; border-radius: 8px;
     }
-
-    .sponsored-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .sponsored-banner-container.below-video {
+      position: relative; inset: auto; width: 100%; max-width: none; margin: 8px 0 3px;
+      justify-content: center; z-index: 15;
     }
-
-    .sponsored-desc {
-      font-size: 11px;
-      color: #94a3b8;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: none;
-    }
-
-    .sponsored-cta {
-      font-size: 11.5px;
-      color: #a78bfa;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-weight: 600;
-      width: fit-content;
-    }
-
-    .sponsored-cta:hover {
-      text-decoration: underline;
-      color: #c4b5fd;
-    }
-
-    .sponsored-close {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 16px;
-      padding: 4px 6px;
-      border-radius: 6px;
-      transition: all 0.2s ease;
-      line-height: 1;
-    }
-
-    .sponsored-close:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    /* Floating Corner Placement Style (Desktop only) */
+    .sponsored-banner-container.below-video .sponsored-card { width: min(100%, 900px); max-width: 900px; padding: 12px 14px; }
+    .sponsored-banner-container.below-video .sponsored-media { width: 220px; height: 124px; }
     .sponsored-banner-container.corner {
-      position: fixed;
-      bottom: 86px;
-      right: 20px;
-      width: auto;
-      max-width: 320px;
+      position: fixed; bottom: 86px; right: 20px; left: auto; width: auto; max-width: 360px; z-index: 40;
     }
-    .sponsored-banner-container.corner .sponsored-card {
-      max-width: 320px;
+    .sponsored-banner-container.corner .sponsored-card { max-width: 360px; }
+    .sponsored-badge {
+      font-size: 10px; font-weight: 800; letter-spacing:.6px; text-transform:uppercase; padding:3px 8px;
+      border-radius:6px; background:rgba(124,77,255,.25); border:1px solid rgba(124,77,255,.45); color:#c4b5fd; white-space:nowrap;
     }
+    .sponsored-media { width: 76px; height: 48px; border-radius:8px; object-fit:cover; border:1px solid var(--card-border); background:#080a14; flex-shrink:0; display:block; }
+    .sponsored-content { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+    .sponsored-title { font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sponsored-desc { font-size:11px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:none; }
+    .sponsored-cta { font-size:11.5px; color:#a78bfa; text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-weight:600; width:fit-content; }
+    .sponsored-close { background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:16px; padding:4px 6px; border-radius:6px; line-height:1; }
+    .stranger-ad-slot { position:absolute; inset:0; pointer-events:none; z-index:10; }
+    .stranger-ad-slot > .sponsored-banner-container { pointer-events:auto; }
 
     /* Video layout swap transition */
     .video-grid.swapped #remoteVideoCard {
@@ -823,50 +743,18 @@
       .controls { min-height: 58px; padding: 6px 10px; gap: 6px; flex-wrap: wrap; }
       .control-button { height: 38px; padding: 0 10px; font-size: 12px; flex: 1; min-width: 80px; }
       
-      /* Responsive: Ads Card sits BELOW from both video layouts, above controls */
-      .sponsored-banner-container {
-        position: relative;
-        bottom: auto;
-        left: auto;
-        right: auto;
-        top: auto;
-        width: 100%;
-        max-width: 100%;
-        margin-top: 4px;
-        margin-bottom: 2px;
-        flex-shrink: 0;
-        z-index: 15;
-        display: none;
-      }
-      .sponsored-banner-container.show {
-        display: flex;
-        justify-content: center;
-      }
-      .sponsored-banner-container .sponsored-card {
-        width: 100%;
-        max-width: 100%;
-        padding: 5px 10px;
-        gap: 8px;
-        border-radius: 10px;
-        background: rgba(13, 17, 34, 0.95);
-        border: 1px solid rgba(124, 77, 255, 0.35);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-      }
-      .sponsored-media {
-        width: 46px;
-        height: 32px;
-        border-radius: 6px;
-      }
-      .sponsored-badge {
-        font-size: 8.5px;
-        padding: 2px 5px;
-      }
-      .sponsored-title {
-        font-size: 11.5px;
-      }
-      .sponsored-desc {
-        font-size: 10px;
-      }
+      .sponsored-banner-container.below-video { position:relative; width:100%; max-width:100%; margin:5px 0 3px; }
+      .sponsored-banner-container.below-video .sponsored-card { width:100%; max-width:100%; padding:8px 10px; gap:8px; }
+      .sponsored-banner-container.below-video .sponsored-media { width:150px; height:84px; }
+      .sponsored-banner-container.stranger-overlay { top:8px; right:8px; width:min(74%,260px); max-width:260px; }
+      .sponsored-banner-container.stranger-overlay .sponsored-card { padding:8px; }
+      .sponsored-banner-container.stranger-overlay .sponsored-media { width:100%; height:96px; max-height:30vh; }
+      .sponsored-banner-container.corner { left:8px; right:8px; bottom:68px; max-width:none; justify-content:center; }
+      .sponsored-banner-container.corner .sponsored-card { width:min(100%,360px); max-width:360px; }
+      .sponsored-banner-container.corner .sponsored-media { width:120px; height:68px; }
+      .sponsored-badge { font-size:8.5px; padding:2px 5px; }
+      .sponsored-title { font-size:11.5px; }
+      .sponsored-desc { font-size:10px; }
       .sponsored-cta {
         font-size: 10.5px;
       }
@@ -954,6 +842,8 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             Stranger
           </div>
+
+          <div id="strangerAdSlot" class="stranger-ad-slot" aria-hidden="true"></div>
 
           <div id="remotePlaceholder" class="video-placeholder">
             <div class="placeholder-icon">

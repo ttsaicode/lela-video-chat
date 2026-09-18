@@ -481,7 +481,7 @@ const server = http.createServer(async (req, res) => {
       const form = new formidable.IncomingForm({
         uploadDir: uploadsDir,
         keepExtensions: true,
-        maxFileSize: 25 * 1024 * 1024 // 25MB limit
+        maxFileSize: 45 * 1024 * 1024 // 45MB temporary upload cap for Supabase Storage
       });
 
       form.parse(req, async (err, fields, files) => {
@@ -520,15 +520,31 @@ const server = http.createServer(async (req, res) => {
 
           // Generate randomized secure filename to prevent path traversal & overwrites
           const safeFilename = "ad_" + crypto.randomBytes(16).toString("hex") + ext;
-          const targetPath = path.join(uploadsDir, safeFilename);
-
           try {
-            fs.renameSync(file.filepath, targetPath);
-            mediaUrl = `/uploads/${safeFilename}`;
+            const remoteUrl = await supabase.uploadAdMedia(
+              file.filepath,
+              file.originalFilename || safeFilename,
+              mime
+            );
+
+            if (remoteUrl) {
+              mediaUrl = remoteUrl;
+              try { fs.unlinkSync(file.filepath); } catch (_) {}
+            } else {
+              // Never persist large/video media on Railway.
+              if (mime.startsWith("video/") || Number(file.size || 0) > 8 * 1024 * 1024) {
+                try { fs.unlinkSync(file.filepath); } catch (_) {}
+                return sendJson(503, { error: "Large/video ad uploads require Supabase Storage to be configured." });
+              }
+              const targetPath = path.join(uploadsDir, safeFilename);
+              fs.renameSync(file.filepath, targetPath);
+              mediaUrl = `/uploads/${safeFilename}`;
+            }
             mediaType = mime.startsWith("video/") ? "video" : "image";
           } catch (moveErr) {
-            console.error("Error moving ad file:", moveErr);
-            return sendJson(500, { error: "Could not save uploaded media" });
+            console.error("Error storing uploaded media:", moveErr);
+            try { fs.unlinkSync(file.filepath); } catch (_) {}
+            return sendJson(500, { error: "Could not store uploaded media" });
           }
         } else if (mediaUrl) {
           mediaType = mediaUrl.match(/\.(mp4|webm|ogg)$/i) ? "video" : "image";
