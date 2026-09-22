@@ -1,34 +1,18 @@
-# Multi-stage build for smaller production image
-FROM node:20-alpine AS builder
+# Simple single-stage build for Node.js app
+FROM node:22-alpine
 
 WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install all dependencies (including dev for build)
-RUN npm ci
-
-# Copy source code
-COPY . .
-
-# Production stage
-FROM node:20-alpine AS production
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
 
 # Install production dependencies only
+COPY package*.json ./
 RUN npm ci --omit=dev
 
-# Copy built application from builder
-COPY --from=builder /app/server.cjs ./server.cjs
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/admin ./admin
-COPY --from=builder /app/lib ./lib
-COPY --from=builder /app/schema.sql ./schema.sql
+# Copy application files
+COPY server.cjs ./
+COPY public ./public
+COPY admin ./admin
+COPY lib ./lib
+COPY schema.sql ./
 
 # Create uploads directory
 RUN mkdir -p uploads
