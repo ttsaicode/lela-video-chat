@@ -78,12 +78,17 @@ if (IS_PRODUCTION) {
   if (!ADMIN_ROUTE || !/^[A-Za-z0-9_-]{24,128}$/.test(rawAdminPath)) {
     failFast("ADMIN_PATH must be 24-128 characters using only letters, numbers, hyphens, or underscores in production.");
   }
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    failFast("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required in production.");
-  }
+  // Supabase & Redis are OPTIONAL - in-memory fallbacks handle auth, bans, reports, ads, metrics
   if (JWT_EXPIRY !== "2h" && JWT_EXPIRY !== "4h" && JWT_EXPIRY !== "8h") {
     failFast("JWT_EXPIRY must be 2h, 4h, or 8h in production.");
   }
+}
+
+if (!supabase.isSupabaseConfigured()) {
+  console.log("[SUPABASE] Using in-memory database fallback (no Supabase credentials provided).");
+}
+if (!redis.isRedisConfigured()) {
+  console.log("[REDIS] Using in-memory cache fallback (no Redis URL provided).");
 }
 
 if (!JWT_SECRET) {
