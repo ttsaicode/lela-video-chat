@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "node server.cjs",
-    "build": "echo 'Build complete'",
+    "build": "echo 'Build complete - static files served from public/ and admin/'",
+    "vercel-build": "echo 'Build complete - static files served from public/ and admin/'",
     "start": "node server.cjs",
     "preview": "node server.cjs",
     "clean": "rm -rf dist",
-    "lint": "echo 'Linting complete'"
+    "lint": "echo 'Linting complete'",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
