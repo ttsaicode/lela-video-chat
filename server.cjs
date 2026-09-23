@@ -60,20 +60,6 @@ const ALLOWED_ORIGINS = new Set(
     .filter(Boolean)
 );
 
-if (IS_PRODUCTION) {
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-    console.warn("[SECURITY ADVISORY] JWT_SECRET is using default or short secret. For maximum production security, set a random 32+ character secret in environment variables.");
-  }
-  if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD.length < 12) {
-    console.warn("[SECURITY ADVISORY] ADMIN_PASSWORD is using default or short password. Recommended: 12+ characters with mixed case, numbers, and symbols.");
-  }
-  if (!rawAdminPath) {
-    console.warn("[SECURITY ADVISORY] ADMIN_PATH is not set; admin dashboard is accessible at /admin. Set ADMIN_PATH to enable a private admin route.");
-  }
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.log("[SECURITY INFO] Supabase credentials not provided. In-memory relational database fallback is active.");
-  }
-}
 
 const ENV_ADMIN_PASSWORD_HASH = ADMIN_PASSWORD
   ? bcrypt.hashSync(ADMIN_PASSWORD, 12)
@@ -1777,7 +1763,7 @@ server.listen(PORT, HOST, () => {
     console.log(`Public /admin:   404 Not Found`);
     console.log(`Private Admin:   http://localhost:${PORT}${ADMIN_ROUTE}`);
   }
-  console.log(`Admin User:      ${ADMIN_USERNAME}`);
+  console.log(`Default Super:   ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}`);
   console.log("==================================================");
   console.log("");
 });
