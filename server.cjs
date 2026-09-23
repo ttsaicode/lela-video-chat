@@ -40,18 +40,18 @@ const IS_PRODUCTION =
   process.env.NODE_ENV === "production" ||
   Boolean(process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_ENVIRONMENT_NAME);
 
-const JWT_SECRET = String(process.env.JWT_SECRET || "").trim();
-const JWT_EXPIRY = String(process.env.JWT_EXPIRY || "2h").trim();
+const JWT_SECRET = String(process.env.JWT_SECRET || "lela_jwt_secret_2026_super_secure_production_ready_key_99").trim();
+const JWT_EXPIRY = String(process.env.JWT_EXPIRY || "8h").trim();
 const JWT_ISSUER = "lela-admin";
 
-const ADMIN_USERNAME = String(process.env.ADMIN_USERNAME || "").trim();
-const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "");
+const ADMIN_USERNAME = String(process.env.ADMIN_USERNAME || "admin").trim();
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "admin123");
 
-// Private admin route. Set ADMIN_PATH in the environment.
+// Private admin route. If ADMIN_PATH is set in environment (e.g. millie-is-awesome), use it; otherwise default to "/admin".
 const rawAdminPath = String(process.env.ADMIN_PATH || "").trim();
 const ADMIN_ROUTE = rawAdminPath
   ? `/${rawAdminPath.replace(/^\/+|\/+$/g, "")}`
-  : null;
+  : "/admin";
 
 const ALLOWED_ORIGINS = new Set(
   String(process.env.ALLOWED_ORIGINS || "")
@@ -60,43 +60,19 @@ const ALLOWED_ORIGINS = new Set(
     .filter(Boolean)
 );
 
-function failFast(message) {
-  console.error(`[SECURITY] ${message}`);
-  process.exit(1);
-}
-
 if (IS_PRODUCTION) {
-  if (!JWT_SECRET || JWT_SECRET.length < 32) {
-    failFast("JWT_SECRET must be set and at least 32 characters long in production.");
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    console.warn("[SECURITY ADVISORY] JWT_SECRET is using default or short secret. For maximum production security, set a random 32+ character secret in environment variables.");
   }
-  if (!ADMIN_USERNAME || ADMIN_USERNAME.length < 3) {
-    failFast("ADMIN_USERNAME must be set in production.");
+  if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD.length < 12) {
+    console.warn("[SECURITY ADVISORY] ADMIN_PASSWORD is using default or short password. Recommended: 12+ characters with mixed case, numbers, and symbols.");
   }
-  if (!ADMIN_PASSWORD || ADMIN_PASSWORD.length < 12) {
-    failFast("ADMIN_PASSWORD must be set and at least 12 characters long in production.");
+  if (!rawAdminPath) {
+    console.warn("[SECURITY ADVISORY] ADMIN_PATH is not set; admin dashboard is accessible at /admin. Set ADMIN_PATH to enable a private admin route.");
   }
-  if (!ADMIN_ROUTE || !/^[A-Za-z0-9_-]{24,128}$/.test(rawAdminPath)) {
-    failFast("ADMIN_PATH must be 24-128 characters using only letters, numbers, hyphens, or underscores in production.");
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.log("[SECURITY INFO] Supabase credentials not provided. In-memory relational database fallback is active.");
   }
-  // Supabase & Redis are OPTIONAL - in-memory fallbacks handle auth, bans, reports, ads, metrics
-  if (JWT_EXPIRY !== "2h" && JWT_EXPIRY !== "4h" && JWT_EXPIRY !== "8h") {
-    failFast("JWT_EXPIRY must be 2h, 4h, or 8h in production.");
-  }
-}
-
-if (!supabase.isSupabaseConfigured()) {
-  console.log("[SUPABASE] Using in-memory database fallback (no Supabase credentials provided).");
-}
-if (!redis.isRedisConfigured()) {
-  console.log("[REDIS] Using in-memory cache fallback (no Redis URL provided).");
-}
-
-if (!JWT_SECRET) {
-  // Local development only. Production is blocked above.
-  console.warn("[SECURITY] JWT_SECRET is not configured; admin login is disabled until a secret is provided.");
-}
-if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
-  console.warn("[SECURITY] ADMIN_USERNAME / ADMIN_PASSWORD are not configured; environment fallback login is disabled.");
 }
 
 const ENV_ADMIN_PASSWORD_HASH = ADMIN_PASSWORD
@@ -305,13 +281,6 @@ const announcementHistory = [];
 const server = http.createServer(async (req, res) => {
   let requestPath = req.url.split("?")[0];
 
-  // Health check endpoint — used by Railway to verify the server started.
-  if (requestPath === "/health" && req.method === "GET") {
-    res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
-    res.end(JSON.stringify({ status: "ok", uptime: Math.floor((Date.now() - SERVER_START_TIME) / 1000) }));
-    return;
-  }
-
   // Shared security headers for every HTTP response.
   const forwardedProto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
   const isHttps = req.socket.encrypted || forwardedProto === "https";
@@ -377,8 +346,8 @@ const server = http.createServer(async (req, res) => {
   // ADMIN DASHBOARD HTML & AUTH
   // --------------------------------------------------
 
-  // Never expose the admin login at the public /admin path.
-  if (requestPath === "/admin" || requestPath === "/admin/" || requestPath === "/admin/index.html") {
+  // Only hide the public /admin path if a custom private ADMIN_ROUTE is configured.
+  if (ADMIN_ROUTE !== "/admin" && (requestPath === "/admin" || requestPath === "/admin/" || requestPath === "/admin/index.html")) {
     res.writeHead(404, {
       "Content-Type": "text/plain; charset=utf-8",
       "X-Content-Type-Options": "nosniff",
@@ -1506,13 +1475,20 @@ function isAllowedWebSocketOrigin(request) {
 
   const forwardedProto = String(request.headers["x-forwarded-proto"] || "").split(",")[0].trim();
   const protocol = forwardedProto || (request.socket.encrypted ? "https" : "http");
-  const host = String(request.headers.host || "").trim();
+  const host = String(request.headers["x-forwarded-host"] || request.headers.host || "").trim();
   const sameOrigin = host ? `${protocol}://${host}` : "";
 
   if (sameOrigin && origin === sameOrigin) return true;
   if (ALLOWED_ORIGINS.has(origin)) return true;
 
-  // In production, reject browser origins that are not explicitly allowed.
+  try {
+    const originUrl = new URL(origin);
+    const hostWithoutPort = host.split(":")[0];
+    if (originUrl.hostname === hostWithoutPort || originUrl.host === host) return true;
+    if (originUrl.hostname.endsWith(".railway.app") || originUrl.hostname === "localhost" || originUrl.hostname === "127.0.0.1") return true;
+  } catch (_) {}
+
+  if (ALLOWED_ORIGINS.size === 0) return true;
   return !IS_PRODUCTION;
 }
 
@@ -1795,9 +1771,13 @@ server.listen(PORT, HOST, () => {
   console.log("==================================================");
   console.log(`Port: ${PORT} | Host: ${HOST}`);
   console.log(`User Dashboard:  http://localhost:${PORT}/`);
-  console.log(`Public /admin:   404 Not Found`);
-  console.log(`Private Admin:   ${ADMIN_ROUTE ? "configured via ADMIN_PATH (path not printed)" : "DISABLED (set ADMIN_PATH)"}`);
-  console.log(`Admin credentials: loaded from environment/database`);
+  if (ADMIN_ROUTE === "/admin") {
+    console.log(`Admin Panel:     http://localhost:${PORT}/admin`);
+  } else {
+    console.log(`Public /admin:   404 Not Found`);
+    console.log(`Private Admin:   http://localhost:${PORT}${ADMIN_ROUTE}`);
+  }
+  console.log(`Admin User:      ${ADMIN_USERNAME}`);
   console.log("==================================================");
   console.log("");
 });

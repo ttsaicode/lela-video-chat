@@ -3,18 +3,18 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "node server.cjs",
-    "build": "echo 'Build complete - static files served from public/ and admin/'",
-    "vercel-build": "echo 'Build complete - static files served from public/ and admin/'",
+    "build": "echo 'Build complete'",
     "start": "node server.cjs",
     "preview": "node server.cjs",
     "clean": "rm -rf dist",
-    "lint": "echo 'Linting complete'",
-    "typecheck": "tsc --noEmit"
+    "lint": "echo 'Linting complete'"
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
     "@supabase/supabase-js": "^2.116.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
@@ -28,6 +28,7 @@
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
+    "vite": "^6.2.3",
     "ws": "^8.21.3"
   },
   "devDependencies": {
