@@ -20,10 +20,14 @@ const HOST = "0.0.0.0";
 const publicDir = path.join(__dirname, "public");
 const adminDir = path.join(__dirname, "admin");
 const uploadsDir = path.join(__dirname, "uploads");
+const dataDir = path.join(__dirname, "data");
 
 // Ensure required directories exist
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
 }
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
@@ -38,7 +42,19 @@ if (!fs.existsSync(adminDir)) {
 
 const IS_PRODUCTION =
   process.env.NODE_ENV === "production" ||
-  Boolean(process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_ENVIRONMENT_NAME);
+  Boolean(
+    process.env.RAILWAY_PROJECT_ID ||
+    process.env.RAILWAY_ENVIRONMENT_NAME ||
+    process.env.RENDER ||
+    process.env.RENDER_SERVICE_ID ||
+    process.env.FLY_APP_NAME ||
+    process.env.HEROKU_APP_ID ||
+    process.env.KOYEB_SERVICE_ID ||
+    process.env.VERCEL ||
+    process.env.DIGITALOCEAN_APP_ID ||
+    process.env.CONTAINER_APP_NAME ||
+    process.env.ZEABUR_ENVIRONMENT
+  );
 
 const JWT_SECRET = String(process.env.JWT_SECRET || "lela_jwt_secret_2026_super_secure_production_ready_key_99").trim();
 const JWT_EXPIRY = String(process.env.JWT_EXPIRY || "8h").trim();
@@ -105,6 +121,13 @@ const loginAttempts = new Map(); // key -> { count, firstAttempt, lockedUntil }
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+
+// Contact form: newest-first in-memory ring, durable JSONL log, per-IP window.
+const contactMessages = [];
+const contactAttempts = new Map(); // ip -> [timestamps]
+const CONTACT_LIMIT = 5;
+const CONTACT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const contactLogPath = path.join(dataDir, "contact-messages.jsonl");
 
 function rateLimitKey(ip, username = "") {
   const normalizedUser = String(username || "").trim().toLowerCase().slice(0, 120);
@@ -1348,11 +1371,104 @@ const server = http.createServer(async (req, res) => {
   }
 
   // --------------------------------------------------
+  // CONTACT FORM (public)
+  // --------------------------------------------------
+
+  if (requestPath === "/api/contact" && req.method === "POST") {
+    const clientIp = getClientIp(req);
+    const now = Date.now();
+
+    const priorAttempts = (contactAttempts.get(clientIp) || []).filter(
+      (timestamp) => now - timestamp < CONTACT_WINDOW_MS
+    );
+
+    if (priorAttempts.length >= CONTACT_LIMIT) {
+      return sendJson(429, { error: "Too many messages. Please wait a few minutes." });
+    }
+
+    let body;
+    try {
+      body = await parseJsonBody(req);
+    } catch (error) {
+      return sendJson(400, { error: "Invalid request body" });
+    }
+
+    // Honeypot filled: acknowledge like success, store nothing.
+    if (body.website) {
+      return sendJson(200, { ok: true });
+    }
+
+    const topic = String(body.topic || "");
+    const email = String(body.email || "").trim();
+    const message = String(body.message || "").trim();
+    const name = String(body.name || "").trim();
+
+    if (!["general", "broken", "press"].includes(topic)) {
+      return sendJson(400, { error: "Choose what the message is about" });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      return sendJson(400, { error: "A valid reply address is required" });
+    }
+
+    if (message.length < 10 || message.length > 2000) {
+      return sendJson(400, { error: "Message must be between 10 and 2000 characters" });
+    }
+
+    if (name.length > 100) {
+      return sendJson(400, { error: "Name must be at most 100 characters" });
+    }
+
+    priorAttempts.push(now);
+    contactAttempts.set(clientIp, priorAttempts);
+
+    const record = {
+      id: crypto.randomUUID(),
+      topic,
+      email,
+      ...(name ? { name } : {}),
+      message,
+      ip: clientIp,
+      receivedAt: new Date().toISOString()
+    };
+
+    contactMessages.unshift(record);
+    if (contactMessages.length > 500) contactMessages.length = 500;
+
+    // Durable copy outside public/, one JSON line per message.
+    fs.appendFile(contactLogPath, JSON.stringify(record) + "\n", (writeError) => {
+      if (writeError) {
+        console.error("[contact] could not persist message:", writeError.message);
+      }
+    });
+    console.log("[contact] message", record.id, "topic:", topic, "from:", email);
+
+    return sendJson(200, { ok: true });
+  }
+
+  // --------------------------------------------------
   // STATIC FILE SERVING WITH SECURITY HARDENING
   // --------------------------------------------------
 
   if (requestPath === "/") {
     requestPath = "/index.html";
+  }
+
+  // Clean route for the video chat app (landing page owns the root URL).
+  if (requestPath === "/app" || requestPath === "/app/") {
+    requestPath = "/app.html";
+  }
+
+  // Extensionless routes for the landing page's sibling documents.
+  const cleanDocumentRoutes = {
+    "/about": "/about.html",
+    "/contact": "/contact.html",
+    "/privacy": "/privacy.html",
+    "/terms": "/terms.html",
+    "/guidelines": "/guidelines.html"
+  };
+  if (cleanDocumentRoutes[requestPath]) {
+    requestPath = cleanDocumentRoutes[requestPath];
   }
 
   try {
@@ -1414,8 +1530,14 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(404);
         return res.end("Application entry point missing");
       }
-      res.writeHead(404);
-      return res.end("Not found");
+
+      // Serve the branded 404 page when it exists, plain text as fallback.
+      res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+      fs.readFile(path.join(publicDir, "404.html"), (notFoundError, notFoundData) => {
+        if (notFoundError) return res.end("Not found");
+        res.end(notFoundData);
+      });
+      return;
     }
 
     const extension = path.extname(filePath).toLowerCase();
@@ -1471,7 +1593,43 @@ function isAllowedWebSocketOrigin(request) {
     const originUrl = new URL(origin);
     const hostWithoutPort = host.split(":")[0];
     if (originUrl.hostname === hostWithoutPort || originUrl.host === host) return true;
-    if (originUrl.hostname.endsWith(".railway.app") || originUrl.hostname === "localhost" || originUrl.hostname === "127.0.0.1") return true;
+
+    // Always allow localhost & loopback addresses
+    if (
+      originUrl.hostname === "localhost" ||
+      originUrl.hostname === "127.0.0.1" ||
+      originUrl.hostname === "::1" ||
+      originUrl.hostname.endsWith(".localhost")
+    ) return true;
+
+    // Allow default cloud platform subdomains (Railway, Render, Fly.io, Heroku, Koyeb, Vercel, Netlify, Zeabur, etc.)
+    if (
+      originUrl.hostname.endsWith(".railway.app") ||
+      originUrl.hostname.endsWith(".up.railway.app") ||
+      originUrl.hostname.endsWith(".onrender.com") ||
+      originUrl.hostname.endsWith(".fly.dev") ||
+      originUrl.hostname.endsWith(".koyeb.app") ||
+      originUrl.hostname.endsWith(".herokuapp.com") ||
+      originUrl.hostname.endsWith(".vercel.app") ||
+      originUrl.hostname.endsWith(".netlify.app") ||
+      originUrl.hostname.endsWith(".zeabur.app")
+    ) return true;
+
+    // Support domain env vars (APP_URL, PUBLIC_URL, SERVER_URL, DOMAIN, etc.)
+    const envUrls = [
+      process.env.APP_URL,
+      process.env.PUBLIC_URL,
+      process.env.SERVER_URL,
+      process.env.RENDER_EXTERNAL_URL,
+      process.env.DOMAIN
+    ].filter(Boolean);
+
+    for (const envUrl of envUrls) {
+      try {
+        const u = new URL(envUrl.startsWith("http") ? envUrl : `https://${envUrl}`);
+        if (u.hostname === originUrl.hostname) return true;
+      } catch (_) {}
+    }
   } catch (_) {}
 
   if (ALLOWED_ORIGINS.size === 0) return true;

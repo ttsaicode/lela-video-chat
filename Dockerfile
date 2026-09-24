@@ -1,37 +1,25 @@
-# Simple single-stage build for Node.js app
+# Universal Multi-Platform Dockerfile
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Install production dependencies only
+# Copy dependency manifests first for build caching
 COPY package*.json ./
+
+# Install dependencies cleanly
 RUN npm ci --omit=dev
 
-# Copy application files
-COPY server.cjs ./
-COPY public ./public
-COPY admin ./admin
-COPY lib ./lib
-COPY schema.sql ./
+# Copy application codebase
+COPY . .
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Set environment defaults
+ENV PORT=3000 \
+    NODE_ENV=production
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-# Change ownership
-RUN chown -R nextjs:nodejs /app
-
-USER nextjs
-
-# Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+# Health check endpoint for container orchestrators (AWS ECS, GCP Cloud Run, DigitalOcean, VPS)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/ || exit 1
 
-# Start server
 CMD ["node", "server.cjs"]
